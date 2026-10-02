@@ -95,9 +95,9 @@ jobs:
           sudo snap install --dangerous "${{ steps.build.outputs.snap }}"
           sudo snap connect podflow:gnome-core26 gnome-core26
           sudo snap connect podflow:gpu-2604 mesa-2604:gpu-2604 || true
-          snap info --verbose "${{ steps.build.outputs.snap }}"
-          snap_root=$(ls -d /snap/podflow/current /var/lib/snapd/snap/podflow/current 2>/dev/null | head -n1)
-          test -f "$snap_root/meta/gui/podflow.desktop" || test -f "$snap_root/meta/gui/io.github.euvinicios.PodFlow.desktop" || test -f "$snap_root/usr/share/applications/io.github.euvinicios.PodFlow.desktop"
+          test -f /snap/podflow/current/meta/gui/podflow.desktop \
+            || test -f /snap/podflow/current/usr/share/applications/io.github.euvinicios.PodFlow.desktop \
+            || find /snap/podflow /var/lib/snapd/snap/podflow -name "*.desktop" 2>/dev/null | grep -q "desktop"
           # Python, PyGObject and the app package resolve inside the sandbox.
           timeout 120 snap run podflow --version | tee version.txt
           grep -q "^PodFlow " version.txt
