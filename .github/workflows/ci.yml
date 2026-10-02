@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Testes e pacote (Ubuntu 26.04)
+    runs-on: ubuntu-latest
+    container: ubuntu:26.04
+    steps:
+      - name: Instalar dependências
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates git make python3 python3-gi \
+            gir1.2-gtk-4.0 gir1.2-adw-1 gir1.2-graphene-1.0 gir1.2-pango-1.0 gir1.2-gdkpixbuf-2.0 \
+            gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            adwaita-icon-theme librsvg2-common fonts-cantarell \
+            xvfb xauth dbus dbus-x11 desktop-file-utils appstream
+
+      - uses: actions/checkout@v7
+
+      - name: Testes (unitários, áudio, MPRIS e interface)
+        run: |
+          dbus-run-session -- xvfb-run -a -s "-screen 0 1600x1000x24" \
+            env GDK_BACKEND=x11 GSK_RENDERER=cairo \
+            python3 -W ignore::DeprecationWarning -m unittest discover -s tests -t . -v
+
+      - name: Validar .desktop e AppStream
+        run: make validate
+
+      - name: Gerar .deb
+        run: make deb
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: podflow-deb
+          path: dist/*.deb
+          if-no-files-found: error

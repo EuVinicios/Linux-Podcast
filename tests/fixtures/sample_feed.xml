@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:podcast="https://podcastindex.org/namespace/1.0">
+  <channel>
+    <title>Café com Código</title>
+    <link>https://exemplo.com.br/podcast</link>
+    <description>Conversas sobre tecnologia &amp; carreira.</description>
+    <itunes:author>Estúdio Exemplo</itunes:author>
+    <itunes:image href="https://exemplo.com.br/capa.jpg"/>
+    <itunes:explicit>no</itunes:explicit>
+    <itunes:category text="Technology">
+      <itunes:category text="Tech News"/>
+    </itunes:category>
+
+    <item>
+      <title>Episódio 3 — O futuro do Linux</title>
+      <guid isPermaLink="false">ep-003</guid>
+      <pubDate>Wed, 30 Sep 2026 08:00:00 -0300</pubDate>
+      <itunes:duration>1:02:03</itunes:duration>
+      <itunes:season>2</itunes:season>
+      <itunes:episode>3</itunes:episode>
+      <itunes:explicit>yes</itunes:explicit>
+      <description>Resumo curto do episódio 3.</description>
+      <content:encoded><![CDATA[<p>Neste episódio falamos de <b>GNOME</b> e <a href="https://gnome.org">GTK</a>.</p><ul><li>Libadwaita</li><li>Flatpak</li></ul>]]></content:encoded>
+      <enclosure url="https://exemplo.com.br/ep3.mp3" length="45000000" type="audio/mpeg"/>
+      <itunes:image href="https://exemplo.com.br/ep3.jpg"/>
+      <podcast:chapters url="https://exemplo.com.br/ep3-chapters.json" type="application/json+chapters"/>
+    </item>
+
+    <item>
+      <title>Episódio 2</title>
+      <pubDate>2026-09-23T10:30:00Z</pubDate>
+      <itunes:duration>45:30</itunes:duration>
+      <description>Sem guid: a URL do áudio vira a chave.</description>
+      <enclosure url="https://exemplo.com.br/ep2.m4a" length="0" type="audio/mp4"/>
+    </item>
+
+    <item>
+      <title>Post sem áudio</title>
+      <guid>post-sem-audio</guid>
+      <description>Itens sem enclosure não são episódios.</description>
+    </item>
+
+    <item>
+      <title>Episódio 1</title>
+      <guid>ep-001</guid>
+      <pubDate>Wed, 16 Sep 2026 08:00:00 GMT</pubDate>
+      <itunes:duration>3600</itunes:duration>
+      <enclosure url="https://exemplo.com.br/ep1.mp3" type="audio/mpeg"/>
+    </item>
+
+    <item>
+      <title>Episódio 1 (duplicado)</title>
+      <guid>ep-001</guid>
+      <enclosure url="https://exemplo.com.br/ep1.mp3" type="audio/mpeg"/>
+    </item>
+  </channel>
+</rss>

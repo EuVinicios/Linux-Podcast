@@ -1,0 +1,166 @@
+{
+  "feed": {
+    "title": {
+      "label": "iTunes Store: Top podcasts em Technology"
+    },
+    "entry": [
+      {
+        "im:name": {
+          "label": "IA Sob Controle - Inteligência Artificial"
+        },
+        "im:image": [
+          {
+            "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/74/4b/b4/744bb4f7-70fc-1105-71b9-b562ed7b61ef/mza_2454960461393126204.jpg/55x55bb.png",
+            "attributes": {
+              "height": "55"
+            }
+          },
+          {
+            "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/74/4b/b4/744bb4f7-70fc-1105-71b9-b562ed7b61ef/mza_2454960461393126204.jpg/60x60bb.png",
+            "attributes": {
+              "height": "60"
+            }
+          },
+          {
+            "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/74/4b/b4/744bb4f7-70fc-1105-71b9-b562ed7b61ef/mza_2454960461393126204.jpg/170x170bb.png",
+            "attributes": {
+              "height": "170"
+            }
+          }
+        ],
+        "summary": {
+          "label": "O podcast indispensável para quem quer se manter em dia com o que está acontecendo no universo da inteligência artificial. O IA Sob Controle traz notícias, dicas de ferramentas e discussões sobre as principais tendências do mundo da IA, além de entrevistas com profissionais e pessoas pesquisadoras que estão definindo o futuro da tecnologia mais promissora e empolgante das últimas décadas."
+        },
+        "im:price": {
+          "label": "Obter",
+          "attributes": {
+            "amount": "0",
+            "currency": "BRL"
+          }
+        },
+        "im:contentType": {
+          "attributes": {
+            "term": "Podcast",
+            "label": "Podcast"
+          }
+        },
+        "rights": {
+          "label": "© Alura - Hipsters Network"
+        },
+        "title": {
+          "label": "IA Sob Controle - Inteligência Artificial - Alura - Hipsters Network"
+        },
+        "link": {
+          "attributes": {
+            "rel": "alternate",
+            "type": "text/html",
+            "href": "https://podcasts.apple.com/br/podcast/ia-sob-controle-intelig%C3%AAncia-artificial/id1763888661?uo=2"
+          }
+        },
+        "id": {
+          "label": "https://podcasts.apple.com/br/podcast/ia-sob-controle-intelig%C3%AAncia-artificial/id1763888661?uo=2",
+          "attributes": {
+            "im:id": "1763888661"
+          }
+        },
+        "im:artist": {
+          "label": "Alura - Hipsters Network"
+        },
+        "category": {
+          "attributes": {
+            "im:id": "1318",
+            "term": "Technology",
+            "scheme": "https://podcasts.apple.com/br/genre/podcasts-tecnologia/id1318?uo=2",
+            "label": "Tecnologia"
+          }
+        },
+        "im:releaseDate": {
+          "label": "2026-09-25T11:55:00-07:00",
+          "attributes": {
+            "label": "25/09/2026"
+          }
+        }
+      },
+      {
+        "im:name": {
+          "label": "Hipsters Ponto Tech"
+        },
+        "im:image": [
+          {
+            "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts125/v4/03/02/dc/0302dc39-6963-0bc3-2aa0-95dafbf4bf65/mza_5758746539385216897.png/55x55bb.png",
+            "attributes": {
+              "height": "55"
+            }
+          },
+          {
+            "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts125/v4/03/02/dc/0302dc39-6963-0bc3-2aa0-95dafbf4bf65/mza_5758746539385216897.png/60x60bb.png",
+            "attributes": {
+              "height": "60"
+            }
+          },
+          {
+            "label": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts125/v4/03/02/dc/0302dc39-6963-0bc3-2aa0-95dafbf4bf65/mza_5758746539385216897.png/170x170bb.png",
+            "attributes": {
+              "height": "170"
+            }
+          }
+        ],
+        "summary": {
+          "label": "Discussões acaloradas sobre desenvolvimento de software, startups, programação, IA, UX, gadgets e as últimas tendências em tecnologia."
+        },
+        "im:price": {
+          "label": "Obter",
+          "attributes": {
+            "amount": "0",
+            "currency": "BRL"
+          }
+        },
+        "im:contentType": {
+          "attributes": {
+            "term": "Podcast",
+            "label": "Podcast"
+          }
+        },
+        "rights": {
+          "label": "Copyright © Alura - Hipsters Network"
+        },
+        "title": {
+          "label": "Hipsters Ponto Tech - Alura - Hipsters Network"
+        },
+        "link": {
+          "attributes": {
+            "rel": "alternate",
+            "type": "text/html",
+            "href": "https://podcasts.apple.com/br/podcast/hipsters-ponto-tech/id1133325943?uo=2"
+          }
+        },
+        "id": {
+          "label": "https://podcasts.apple.com/br/podcast/hipsters-ponto-tech/id1133325943?uo=2",
+          "attributes": {
+            "im:id": "1133325943"
+          }
+        },
+        "im:artist": {
+          "label": "Alura - Hipsters Network",
+          "attributes": {
+            "href": "https://podcasts.apple.com/br/artist/alura/1456287978?uo=2"
+          }
+        },
+        "category": {
+          "attributes": {
+            "im:id": "1318",
+            "term": "Technology",
+            "scheme": "https://podcasts.apple.com/br/genre/podcasts-tecnologia/id1318?uo=2",
+            "label": "Tecnologia"
+          }
+        },
+        "im:releaseDate": {
+          "label": "2026-09-28T20:59:00-07:00",
+          "attributes": {
+            "label": "28/09/2026"
+          }
+        }
+      }
+    ]
+  }
+}

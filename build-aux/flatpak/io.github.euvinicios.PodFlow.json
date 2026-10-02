@@ -1,0 +1,43 @@
+{
+  "id": "io.github.euvinicios.PodFlow",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "50",
+  "sdk": "org.gnome.Sdk",
+  "command": "podflow",
+  "finish-args": [
+    "--share=network",
+    "--share=ipc",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--device=dri",
+    "--socket=pulseaudio",
+    "--own-name=org.mpris.MediaPlayer2.podflow"
+  ],
+  "cleanup": [
+    "/include",
+    "/lib/pkgconfig",
+    "*.la"
+  ],
+  "modules": [
+    {
+      "name": "podflow",
+      "buildsystem": "simple",
+      "build-commands": [
+        "make install PREFIX=/app PYTHON=/usr/bin/python3"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "../..",
+          "skip": [
+            "build",
+            "dist",
+            ".test-data",
+            ".flatpak-builder",
+            "repo"
+          ]
+        }
+      ]
+    }
+  ]
+}

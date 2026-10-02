@@ -1,0 +1,53 @@
+{
+  "feed": {
+    "title": "Principais podcasts",
+    "results": [
+      {
+        "artistName": "Déia Freitas",
+        "id": "1498261768",
+        "name": "Não Inviabilize",
+        "kind": "podcasts",
+        "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts116/v4/75/d3/76/75d376e6-3695-afe6-e1e7-722094849d7d/mza_13789298122083723167.jpg/100x100bb.png",
+        "genres": [
+          {
+            "genreId": "1483",
+            "name": "Ficção",
+            "url": "https://itunes.apple.com/br/genre/id1483"
+          }
+        ],
+        "url": "https://podcasts.apple.com/br/podcast/n%C3%A3o-inviabilize/id1498261768"
+      },
+      {
+        "artistName": "G1",
+        "id": "1477406521",
+        "name": "O Assunto",
+        "kind": "podcasts",
+        "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts122/v4/1a/07/7b/1a077b7a-9897-08fd-0b34-ca126757736b/mza_659742744913709222.jpg/100x100bb.png",
+        "genres": [
+          {
+            "genreId": "1489",
+            "name": "Notícias",
+            "url": "https://itunes.apple.com/br/genre/id1489"
+          }
+        ],
+        "url": "https://podcasts.apple.com/br/podcast/o-assunto/id1477406521"
+      },
+      {
+        "artistName": "Grupo Flow",
+        "id": "1466327128",
+        "name": "Flow Podcast",
+        "kind": "podcasts",
+        "contentAdvisoryRating": "Explict",
+        "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts116/v4/53/bf/39/53bf396b-7722-39c3-334b-44250289d6da/mza_8108217580151050881.jpg/100x100bb.png",
+        "genres": [
+          {
+            "genreId": "1304",
+            "name": "Educação",
+            "url": "https://itunes.apple.com/br/genre/id1304"
+          }
+        ],
+        "url": "https://podcasts.apple.com/br/podcast/flow-podcast/id1466327128"
+      }
+    ]
+  }
+}

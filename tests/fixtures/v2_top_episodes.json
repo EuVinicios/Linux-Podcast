@@ -1,0 +1,49 @@
+{
+  "feed": {
+    "title": "Episódios populares",
+    "results": [
+      {
+        "artistName": "Central 3 Podcasts",
+        "id": "1000792512499",
+        "name": "II - 2026.65 - Querem guerra espiritual?! Então tomem guerra espiritual!",
+        "kind": "podcast-episodes",
+        "contentAdvisoryRating": "Explict",
+        "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/13/52/78/1352781f-450b-277b-8197-c4bbdee09e32/mza_7750582131290757040.jpg/100x100bb.png",
+        "genres": [
+          {
+            "name": "Política"
+          }
+        ],
+        "url": "https://podcasts.apple.com/br/podcast/ii-2026-65-querem-guerra-espiritual-ent%C3%A3o-tomem-guerra/id1502134265?i=1000792512499"
+      },
+      {
+        "artistName": "G1",
+        "id": "1000792500154",
+        "name": "A fotografia das pesquisas eleitorais às vésperas do 1º turno",
+        "kind": "podcast-episodes",
+        "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/a9/e3/68/a9e368fa-71f3-baee-b73d-bc10a815abaf/mza_458466937653347163.jpg/100x100bb.png",
+        "genres": [
+          {
+            "genreId": "1489",
+            "name": "Notícias",
+            "url": "https://itunes.apple.com/br/genre/id1489"
+          }
+        ],
+        "url": "https://podcasts.apple.com/br/podcast/a-fotografia-das-pesquisas-eleitorais-%C3%A0s-v%C3%A9speras/id1477406521?i=1000792500154"
+      },
+      {
+        "artistName": "Déia Freitas",
+        "id": "1000792549097",
+        "name": "JOANINHA",
+        "kind": "podcast-episodes",
+        "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/0d/e9/f4/0de9f434-9c59-aba6-09b8-159a57c6ba01/mza_8206883816093877854.jpg/100x100bb.png",
+        "genres": [
+          {
+            "name": "Ficção cômica"
+          }
+        ],
+        "url": "https://podcasts.apple.com/br/podcast/joaninha/id1498261768?i=1000792549097"
+      }
+    ]
+  }
+}

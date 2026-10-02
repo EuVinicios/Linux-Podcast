@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=PodFlow
+GenericName=Podcast Player
+GenericName[pt_BR]=Reprodutor de podcasts
+Comment=Listen to podcasts with charts and new shows from Brazil
+Comment[pt_BR]=Ouça podcasts com rankings e novidades do Brasil
+Exec=podflow
+Icon=io.github.euvinicios.PodFlow
+Terminal=false
+Categories=GTK;GNOME;AudioVideo;Audio;Player;
+Keywords=podcast;podcasts;audio;episodes;rss;feed;charts;
+Keywords[pt_BR]=podcast;podcasts;áudio;episódios;rss;feed;rankings;ouvir;
+StartupNotify=true
+X-GNOME-UsesNotifications=true

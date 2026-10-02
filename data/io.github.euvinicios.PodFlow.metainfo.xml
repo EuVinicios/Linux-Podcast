@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 EuVinicios -->
+<component type="desktop-application">
+  <id>io.github.euvinicios.PodFlow</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>PodFlow</name>
+  <summary>Listen to podcasts with charts from Brazil</summary>
+  <summary xml:lang="pt-BR">Ouça podcasts com rankings do Brasil</summary>
+
+  <developer id="io.github.euvinicios">
+    <name>EuVinicios</name>
+  </developer>
+
+  <description>
+    <p>
+      PodFlow is a native GNOME podcast player with the curation of Brazil's top charts
+      and new releases, designed with GTK 4 and Libadwaita.
+    </p>
+    <p xml:lang="pt-BR">
+      O PodFlow é um app de podcasts nativo para o GNOME, com a curadoria dos rankings
+      e das novidades do Brasil, feito com GTK 4 e Libadwaita.
+    </p>
+    <ul>
+      <li>Top Podcasts and Top Episodes charts with category filters</li>
+      <li xml:lang="pt-BR">Rankings Top Podcasts e Top Episódios com filtro por categoria</li>
+      <li>Explore page with featured shows and genre shelves</li>
+      <li xml:lang="pt-BR">Página Explorar com destaques e prateleiras por gênero</li>
+      <li>Up Next queue, continue listening and per-episode progress</li>
+      <li xml:lang="pt-BR">Fila A Seguir, Continuar Ouvindo e progresso de cada episódio</li>
+      <li>Playback speed from 0.5× to 2.5× without changing the pitch</li>
+      <li xml:lang="pt-BR">Velocidade de 0,5× a 2,5× sem alterar o tom da voz</li>
+      <li>Sleep timer, offline downloads and listening history</li>
+      <li xml:lang="pt-BR">Timer de sono, downloads offline e histórico</li>
+      <li>GNOME Shell media controls and multimedia keys (MPRIS)</li>
+      <li xml:lang="pt-BR">Controles de mídia do GNOME Shell e teclas multimídia (MPRIS)</li>
+      <li>Works offline with a pre-installed catalog of Brazilian podcasts</li>
+      <li xml:lang="pt-BR">Funciona offline com um catálogo pré-instalado de podcasts brasileiros</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.euvinicios.PodFlow.desktop</launchable>
+  <provides>
+    <binary>podflow</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/EuVinicios/Linux-Podcast</url>
+  <url type="bugtracker">https://github.com/EuVinicios/Linux-Podcast/issues</url>
+  <url type="vcs-browser">https://github.com/EuVinicios/Linux-Podcast</url>
+
+  <content_rating type="oars-1.1"/>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#f3c6dd</color>
+    <color type="primary" scheme_preference="dark">#4c1d95</color>
+  </branding>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/EuVinicios/Linux-Podcast/main/data/screenshots/explore.png</image>
+      <caption>Explore: featured shows and new releases</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/EuVinicios/Linux-Podcast/main/data/screenshots/charts.png</image>
+      <caption>Top podcasts in Brazil</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/EuVinicios/Linux-Podcast/main/data/screenshots/podcast.png</image>
+      <caption>Show page with episodes</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/EuVinicios/Linux-Podcast/main/data/screenshots/listen-now.png</image>
+      <caption>Listen Now with the Up Next queue</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="0.1.0" date="2026-10-02">
+      <description>
+        <p>First public release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

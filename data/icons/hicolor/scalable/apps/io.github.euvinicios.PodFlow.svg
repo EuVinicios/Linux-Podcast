@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="face" x1="14" y1="10" x2="114" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="0.55" stop-color="#d9338a"/>
+      <stop offset="1" stop-color="#fb7a3c"/>
+    </linearGradient>
+    <linearGradient id="base" x1="12" y1="20" x2="116" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4c1d95"/>
+      <stop offset="1" stop-color="#9a2b4f"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="38" cy="22" r="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.32"/>
+      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glyph" x1="0" y1="40" x2="0" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#fdeef6"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="16" width="104" height="104" rx="28" fill="url(#base)"/>
+  <rect x="12" y="10" width="104" height="104" rx="28" fill="url(#face)"/>
+  <rect x="12" y="10" width="104" height="104" rx="28" fill="url(#shine)"/>
+  <path d="M33 45.5 C33 40.2 38.6 37 43.2 39.7 L66.6 53.4 C71.1 56 71.1 62.5 66.6 65.1 L43.2 78.8 C38.6 81.5 33 78.3 33 73 Z" fill="url(#glyph)"/>
+  <rect x="75" y="51" width="8.5" height="20" rx="4.25" fill="#ffffff" fill-opacity="0.95"/>
+  <rect x="87.5" y="40" width="8.5" height="42" rx="4.25" fill="#ffffff" fill-opacity="0.88"/>
+  <rect x="100" y="48" width="8.5" height="26" rx="4.25" fill="#ffffff" fill-opacity="0.78"/>
+</svg>

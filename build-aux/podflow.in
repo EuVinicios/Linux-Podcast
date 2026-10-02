@@ -1,0 +1,10 @@
+#!@PYTHON@
+"""PodFlow launcher."""
+
+import sys
+
+sys.path.insert(1, "@PKGDATADIR@")
+
+from podflow.main import main  # noqa: E402
+
+sys.exit(main())

@@ -1,0 +1,15 @@
+# PodFlow uses only the Python standard library plus PyGObject (GTK 4,
+# Libadwaita and GStreamer bindings). Install them from your distribution:
+#
+#   Ubuntu 26.04 / Debian:
+#     sudo apt install python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 gir1.2-graphene-1.0 \
+#       gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 \
+#       gstreamer1.0-plugins-good gstreamer1.0-libav
+#
+#   Fedora:
+#     sudo dnf install python3-gobject gtk4 libadwaita gstreamer1-plugins-good \
+#       gstreamer1-plugin-libav
+#
+# PyGObject from PyPI also works inside a virtualenv, but it needs the
+# GObject Introspection development headers to build.
+PyGObject>=3.50
