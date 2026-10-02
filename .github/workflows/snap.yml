@@ -42,6 +42,7 @@ jobs:
       - name: Preparar LXD e Snapcraft
         run: |
           set -euo pipefail
+          [ -d /snap ] || sudo ln -s /var/lib/snapd/snap /snap
           sudo groupadd --force --system lxd
           sudo usermod --append --groups lxd "$USER"
           sudo snap install lxd || sudo snap refresh lxd
@@ -50,32 +51,35 @@ jobs:
           sudo snap install snapcraft --classic --channel latest/edge
           snapcraft --version
 
-          gnome_py=$(find /snap/snapcraft/current -path '*/snapcraft/extensions/gnome.py' -print -quit)
-          if grep -q '"core26": "gnome-core26-sdk"' "$gnome_py"; then
+          rev=$(snap list snapcraft | awk 'NR == 2 { print $3 }')
+          work=$(mktemp -d)
+          sudo unsquashfs -q -d "$work/snapcraft" "/var/lib/snapd/snaps/snapcraft_${rev}.snap"
+
+          gnome_py=$(find "$work/snapcraft" -path '*/snapcraft/extensions/gnome.py' -print -quit)
+          if [ -n "$gnome_py" ] && grep -q '"core26": "gnome-core26-sdk"' "$gnome_py"; then
             echo "Snapcraft já suporta core26 na extensão gnome."
+            sudo rm -rf "$work"
             exit 0
           fi
 
           echo "Aplicando canonical/snapcraft#6278 ao Snapcraft instalado."
           fix=https://raw.githubusercontent.com/canonical/snapcraft/c05aed0c1328725c0c4da8534151b37720bd67a8
-          rev=$(snap list snapcraft | awk 'NR == 2 { print $3 }')
-          work=$(mktemp -d)
-          sudo unsquashfs -q -d "$work/snapcraft" "/var/lib/snapd/snaps/snapcraft_${rev}.snap"
-          pkg="$work/snapcraft/${gnome_py#/snap/snapcraft/current/}"
-          pkg="${pkg%/extensions/gnome.py}"
+          pkg=$(dirname "$(dirname "$gnome_py")")
           sudo curl -fsSL -o "$pkg/extensions/gnome.py" "$fix/snapcraft/extensions/gnome.py"
           sudo curl -fsSL -o "$pkg/parts/desktop_file.py" "$fix/snapcraft/parts/desktop_file.py"
           sudo find "$pkg/extensions/__pycache__" "$pkg/parts/__pycache__" \
             \( -name 'gnome.*.pyc' -o -name 'desktop_file.*.pyc' \) -delete 2>/dev/null || true
-          makefile=$(find "$work/snapcraft/share" -path '*/extensions/desktop/command-chain/Makefile' -print -quit)
+          makefile=$(find "$work/snapcraft/share" -path '*/extensions/desktop/command-chain/Makefile' -print -quit 2>/dev/null || true)
           [ -z "$makefile" ] || grep -q '^.NOTPARALLEL:' "$makefile" || echo '.NOTPARALLEL:' | sudo tee -a "$makefile" >/dev/null
           sudo snap pack "$work/snapcraft" "$work"
           sudo snap install --dangerous --classic "$work"/snapcraft_*.snap
-          grep -q '"core26": "gnome-core26-sdk"' "$gnome_py"
+          sudo rm -rf "$work"
           snapcraft --version
 
       - name: Gerar o snap
         id: build
+        env:
+          SNAPCRAFT_BUILD_ENVIRONMENT: lxd
         run: |
           set -euo pipefail
           # New login so the lxd group membership applies.
@@ -90,7 +94,7 @@ jobs:
           sudo snap connect podflow:gnome-core26 gnome-core26
           sudo snap connect podflow:gpu-2604 mesa-2604:gpu-2604 || true
           snap info --verbose "${{ steps.build.outputs.snap }}" | head -20
-          test -f /snap/podflow/current/meta/gui/io.github.euvinicios.PodFlow.desktop
+          test -f /snap/podflow/current/meta/gui/io.github.euvinicios.PodFlow.desktop || test -f /var/lib/snapd/snap/podflow/current/meta/gui/io.github.euvinicios.PodFlow.desktop
           # Python, PyGObject and the app package resolve inside the sandbox.
           timeout 120 snap run podflow --version | tee version.txt
           grep -q "^PodFlow " version.txt
