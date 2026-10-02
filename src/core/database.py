@@ -23,7 +23,7 @@ from ..models import Episode, Podcast, itunes_podcast_id
 from ..utils import tasks
 from . import seed_data
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS podcasts (
@@ -97,6 +97,16 @@ CREATE TABLE IF NOT EXISTS cache (
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
+);
+
+-- Episode actions waiting to be uploaded to the sync server (latest per episode).
+CREATE TABLE IF NOT EXISTS sync_actions (
+    episode_id TEXT PRIMARY KEY REFERENCES episodes(id) ON DELETE CASCADE,
+    action     TEXT NOT NULL,
+    started    INTEGER NOT NULL DEFAULT -1,
+    position   INTEGER NOT NULL DEFAULT -1,
+    total      INTEGER NOT NULL DEFAULT -1,
+    created_at INTEGER NOT NULL
 );
 """
 
@@ -194,12 +204,15 @@ class Database(GObject.Object):
         "queue-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "history-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "downloads-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "sync-actions-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, path: str | Path | None = None, seed: bool = True):
         super().__init__()
         self.path = str(path or config.db_path())
         self._lock = threading.RLock()
+        # Set by the sync manager while an account is connected.
+        self.sync_recording = False
         self._conn = sqlite3.connect(self.path, check_same_thread=False,
                                      isolation_level=None, timeout=10)
         self._conn.row_factory = sqlite3.Row
@@ -249,7 +262,8 @@ class Database(GObject.Object):
 
     def _migrate(self) -> None:
         version = self._conn.execute("PRAGMA user_version").fetchone()[0]
-        if version < 1:
+        if version < SCHEMA_VERSION:
+            # Every statement is idempotent, so this both creates and upgrades.
             self._conn.executescript(SCHEMA)
             self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
@@ -468,20 +482,39 @@ class Database(GObject.Object):
         self._emit("episode-changed", episode_id)
         self._emit("history-changed")
 
-    def set_played(self, episode_id: str, played: bool = True) -> None:
-        if played:
+    def set_played(self, episode_id: str, played: bool = True, *, record: bool = True,
+                   at: int | None = None) -> None:
+        """Mark (un)played. ``record`` queues the change for sync; ``at`` backdates it."""
+        if played and at is None:
             self._exec("UPDATE episodes SET played = 1, played_at = ?, position = 0, "
                        "last_played_at = COALESCE(last_played_at, ?) WHERE id = ?",
                        (_now(), _now(), episode_id))
+        elif played:
+            self._exec("UPDATE episodes SET played = 1, played_at = ?, position = 0, "
+                       "last_played_at = MAX(COALESCE(last_played_at, 0), ?) WHERE id = ?",
+                       (at, at, episode_id))
         else:
             self._exec("UPDATE episodes SET played = 0, played_at = NULL WHERE id = ?",
                        (episode_id,))
+        if record:
+            row = self._one("SELECT duration FROM episodes WHERE id = ?", (episode_id,))
+            duration = int(row["duration"]) if row else 0
+            if played:
+                self.sync_record(episode_id, "play", 0, duration, duration)
+            else:
+                self.sync_record(episode_id, "new")
         self._emit("episode-changed", episode_id)
         self._emit("history-changed")
 
     def mark_all_played(self, podcast_id: str) -> None:
+        ids = [r["id"] for r in self._query(
+            "SELECT id FROM episodes WHERE podcast_id = ? AND played = 0", (podcast_id,))]
         self._exec("UPDATE episodes SET played = 1, played_at = ?, position = 0 "
                    "WHERE podcast_id = ? AND played = 0", (_now(), podcast_id))
+        for episode_id in ids if self.sync_recording else ():
+            row = self._one("SELECT duration FROM episodes WHERE id = ?", (episode_id,))
+            if row and row["duration"]:
+                self.sync_record(episode_id, "play", 0, row["duration"], row["duration"])
         self._emit("episodes-changed", podcast_id)
 
     def set_saved(self, episode_id: str, saved: bool) -> None:
@@ -582,3 +615,92 @@ class Database(GObject.Object):
         self._exec("INSERT INTO settings (key, value) VALUES (?, ?) "
                    "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                    (key, json.dumps(value)))
+
+    def delete_settings(self, *keys: str) -> None:
+        with self._tx() as conn:
+            conn.executemany("DELETE FROM settings WHERE key = ?", [(k,) for k in keys])
+
+    # -- sync ------------------------------------------------------------------------
+
+    def sync_record(self, episode_id: str, action: str, started: float = -1,
+                    position: float = -1, total: float = -1) -> None:
+        """Queue an episode action for upload (only while an account is connected)."""
+        if not self.sync_recording:
+            return
+        self._exec("INSERT INTO sync_actions (episode_id, action, started, position, total, "
+                   "created_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(episode_id) DO UPDATE SET "
+                   "action = excluded.action, started = excluded.started, "
+                   "position = excluded.position, total = excluded.total, "
+                   "created_at = excluded.created_at",
+                   (episode_id, action, int(started), int(position), int(total), _now()))
+        self._emit("sync-actions-changed")
+
+    def sync_pending(self, limit: int = 500) -> list[dict[str, Any]]:
+        rows = self._query(
+            "SELECT s.*, e.audio_url, e.guid, p.feed_url FROM sync_actions s "
+            "JOIN episodes e ON e.id = s.episode_id JOIN podcasts p ON p.id = e.podcast_id "
+            "ORDER BY s.created_at LIMIT ?", (limit,))
+        return [dict(r) for r in rows]
+
+    def sync_count_pending(self) -> int:
+        row = self._one("SELECT COUNT(*) FROM sync_actions")
+        return row[0] if row else 0
+
+    def sync_done(self, sent: list[dict[str, Any]]) -> None:
+        """Drop uploaded actions unless the episode changed again meanwhile."""
+        with self._tx() as conn:
+            conn.executemany("DELETE FROM sync_actions WHERE episode_id = ? AND created_at = ? "
+                             "AND action = ? AND position = ?",
+                             [(a["episode_id"], a["created_at"], a["action"], a["position"])
+                              for a in sent])
+
+    def sync_clear(self) -> None:
+        self._exec("DELETE FROM sync_actions")
+
+    def sync_queue_history(self, limit: int = 300) -> int:
+        """Queue the listening history, so a first sync shares what was already heard."""
+        rows = self._query("SELECT id, played, position, duration FROM episodes "
+                           "WHERE last_played_at IS NOT NULL AND (played = 1 OR position >= 15) "
+                           "ORDER BY last_played_at DESC LIMIT ?", (limit,))
+        count = 0
+        for row in rows:
+            if row["played"] and row["duration"]:
+                self.sync_record(row["id"], "play", 0, row["duration"], row["duration"])
+            elif not row["played"]:
+                self.sync_record(row["id"], "play", 0, row["position"], row["duration"] or -1)
+            else:
+                continue
+            count += 1
+        return count
+
+    def subscribed_feeds(self) -> dict[str, str]:
+        """feed URL -> podcast id for every followed show that has a feed."""
+        rows = self._query("SELECT id, feed_url FROM podcasts WHERE subscribed = 1 "
+                           "AND feed_url != ''")
+        return {r["feed_url"]: r["id"] for r in rows}
+
+    def seed_feeds(self) -> set[str]:
+        """Feeds of the pre-installed catalog."""
+        return {r["feed_url"] for r in self._query(
+            "SELECT feed_url FROM podcasts WHERE is_seed = 1 AND feed_url != ''")}
+
+    def find_episode_for_sync(self, feed_url: str, episode_url: str,
+                              guid: str = "") -> Episode | None:
+        if episode_url:
+            row = self._one(_EPISODE_SELECT + " WHERE e.audio_url = ? ORDER BY p.subscribed DESC "
+                            "LIMIT 1", (episode_url,))
+            if row is not None:
+                return _episode(row)
+        if guid and feed_url:
+            row = self._one(_EPISODE_SELECT + " WHERE e.guid = ? AND p.feed_url = ? LIMIT 1",
+                            (guid, feed_url))
+            if row is not None:
+                return _episode(row)
+        return None
+
+    def apply_remote_progress(self, episode_id: str, position: float, at: int) -> None:
+        """Position heard on another device (newer than ours)."""
+        self._exec("UPDATE episodes SET position = ?, played = 0, played_at = NULL, "
+                   "last_played_at = ? WHERE id = ?", (max(0.0, position), at, episode_id))
+        self._emit("episode-changed", episode_id)
+        self._emit("history-changed")

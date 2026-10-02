@@ -10,7 +10,12 @@ App nativo para Linux feito com GTK 4, Libadwaita e GStreamer, inspirado na cura
 Apple Podcasts Brasil ([/charts](https://podcasts.apple.com/br/charts) e
 [/new](https://podcasts.apple.com/br/new)) e adaptado às diretrizes de design do GNOME.
 
+**[Site](https://euvinicios.github.io/Linux-Podcast/)** ·
+**[Baixar](https://github.com/EuVinicios/Linux-Podcast/releases/latest)** ·
+**[Relatar um problema](https://github.com/EuVinicios/Linux-Podcast/issues)**
+
 [![CI](https://github.com/EuVinicios/Linux-Podcast/actions/workflows/ci.yml/badge.svg)](https://github.com/EuVinicios/Linux-Podcast/actions/workflows/ci.yml)
+[![Snap](https://github.com/EuVinicios/Linux-Podcast/actions/workflows/snap.yml/badge.svg)](https://github.com/EuVinicios/Linux-Podcast/actions/workflows/snap.yml)
 [![Release](https://img.shields.io/github/v/release/EuVinicios/Linux-Podcast?label=download)](https://github.com/EuVinicios/Linux-Podcast/releases/latest)
 [![Licença: GPL v3+](https://img.shields.io/badge/licen%C3%A7a-GPL--3.0--or--later-blue)](LICENSE)
 
@@ -31,6 +36,10 @@ Apple Podcasts Brasil ([/charts](https://podcasts.apple.com/br/charts) e
   Todos / Não ouvidos / Baixados.
 - **Player sempre à mão**: −15 s / +30 s, velocidade de 0,5× a 2,5× **sem alterar o tom da voz**,
   timer de sono (15/30/45/60 min ou fim do episódio), volume e fila retrátil com arrastar e soltar.
+- **Conta e sincronização** (opcional): programas seguidos e progresso dos episódios em todos
+  os seus aparelhos, com **gpodder.net**, **Nextcloud** (app GPodder Sync, login pelo navegador)
+  ou um servidor próprio compatível com o gPodder. Conversa com AntennaPod, gPodder e Kasts, e a
+  senha fica no chaveiro do sistema.
 - **Integrado ao GNOME**: controles de mídia do GNOME Shell e teclas multimídia (MPRIS v2),
   bloqueio da suspensão enquanto toca, tema claro/escuro automático e notificações.
 - **Offline-first**: abre com um catálogo de 12 podcasts brasileiros já na biblioteca; rankings,
@@ -40,22 +49,34 @@ Apple Podcasts Brasil ([/charts](https://podcasts.apple.com/br/charts) e
 | Programa | Rankings | Ouvir Agora |
 |:---:|:---:|:---:|
 | <img src="data/screenshots/podcast.png" width="280" alt="Página do programa"> | <img src="data/screenshots/charts.png" width="280" alt="Rankings"> | <img src="data/screenshots/listen-now.png" width="280" alt="Ouvir Agora"> |
-| **Tema claro** | **Biblioteca** | **Celular / janela estreita** |
-| <img src="data/screenshots/explore-light.png" width="280" alt="Tema claro"> | <img src="data/screenshots/library.png" width="280" alt="Biblioteca"> | <img src="data/screenshots/narrow-podcast.png" width="120" alt="Layout estreito"> |
+| **Tema claro** | **Sincronização** | **Celular / janela estreita** |
+| <img src="data/screenshots/explore-light.png" width="280" alt="Tema claro"> | <img src="data/screenshots/sync.png" width="280" alt="Sincronização"> | <img src="data/screenshots/narrow-podcast.png" width="120" alt="Layout estreito"> |
 
 ## Instalação
 
-### Ubuntu 26.04 LTS (recomendado: pacote `.deb`)
+### Central de Aplicativos do Ubuntu (snap)
 
-O `.deb` usa o GTK, a Libadwaita e o GStreamer do próprio sistema, por isso é leve (≈ 70 KB) e se
+Procure por **PodFlow** na Central de Aplicativos ou instale pelo terminal:
+
+```bash
+sudo snap install podflow
+sudo snap connect podflow:password-manager-service   # opcional: senha da sincronização no chaveiro
+```
+
+> A publicação na Snap Store está descrita em
+> [`docs/publicar-na-central-de-apps.md`](docs/publicar-na-central-de-apps.md).
+
+### Ubuntu 26.04 LTS (pacote `.deb`)
+
+O `.deb` usa o GTK, a Libadwaita e o GStreamer do próprio sistema, por isso é leve (≈ 80 KB) e se
 integra perfeitamente ao Ubuntu.
 
-1. Baixe `podflow_0.1.0_all.deb` na página de
+1. Baixe `podflow_0.2.0_all.deb` na página de
    [**Releases**](https://github.com/EuVinicios/Linux-Podcast/releases/latest).
 2. Instale pelo terminal, na pasta do download:
 
    ```bash
-   sudo apt install ./podflow_0.1.0_all.deb
+   sudo apt install ./podflow_0.2.0_all.deb
    ```
 
 3. Abra **PodFlow** no menu de aplicativos.
@@ -99,13 +120,16 @@ sudo make install         # opcional: instala em /usr/local
 ```text
 src/
 ├── main.py, window.py        # Adw.Application, janela, navegação e breakpoints
-├── api/                      # Apple charts (JSON), iTunes Search/Lookup, parser RSS, gêneros
-├── core/                     # SQLite, seed, GStreamer (playbin3 + scaletempo), fila, MPRIS, downloads
+├── api/                      # Apple charts, iTunes Search/Lookup, parser RSS, cliente gPodder
+├── core/                     # SQLite, GStreamer (playbin3 + scaletempo), fila, MPRIS, downloads,
+│                             # sincronização (SyncManager) e chaveiro (libsecret)
 ├── ui/                       # barra lateral (AdwSidebar), telas, componentes e style.css
 └── utils/                    # cache de capas, formatação pt-BR, cores, tarefas em segundo plano
-tests/                        # unittest: parsers, banco, áudio real, MPRIS e smoke test da interface
+tests/                        # unittest: parsers, banco, áudio, MPRIS, sync (servidor falso) e interface
 tools/screenshots.py          # percorre as telas e gera capturas (também usado como teste)
-build-aux/                    # lançador, empacotamento .deb e manifesto Flatpak
+snap/                         # snapcraft.yaml (core26 + extensão GNOME)
+website/                      # site do projeto (GitHub Pages, HTML/CSS sem build)
+build-aux/                    # lançador, empacotamento .deb, manifesto Flatpak e montagem do site
 ```
 
 | Comando | O que faz |
@@ -116,21 +140,33 @@ build-aux/                    # lançador, empacotamento .deb e manifesto Flatpa
 | `make screenshots` | regenera as capturas em `data/screenshots/` |
 | `make deb` | gera `dist/podflow_<versão>_all.deb` |
 | `make flatpak` | compila e instala o Flatpak localmente (requer `flatpak-builder`) |
+| `make snap` | gera o snap (requer `snapcraft` e LXD) |
+| `make website` | monta o site em `build/website/` |
 
 Dados do usuário ficam em `~/.local/share/podflow/` (banco SQLite e downloads) e
-`~/.cache/podflow/` (capas). Sem conta, sem rastreamento: o app conversa apenas com as APIs públicas
-da Apple e com os servidores de cada podcast.
+`~/.cache/podflow/` (capas). Sem rastreamento: o app conversa apenas com as APIs públicas da Apple,
+com os servidores de cada podcast e, se você entrar com uma conta, com o servidor de sincronização
+que escolher. Veja a [política de privacidade](https://euvinicios.github.io/Linux-Podcast/privacidade.html).
 
 ### Publicando uma versão
 
-1. Atualize `VERSION` em `src/config.py`, o `CHANGELOG.md` e o `<releases>` do metainfo.
+1. Atualize `VERSION` em `src/config.py`, o `CHANGELOG.md` e o `<releases>` do metainfo
+   (`make validate` confere).
 2. `git tag v0.2.0 && git push origin v0.2.0`. O GitHub Actions gera o `.deb`, o Flatpak e o
-   `SHA256SUMS` e publica tudo na página de Releases.
+   `SHA256SUMS` na página de Releases e envia o snap ao canal `candidate` da Snap Store.
+
+### Site
+
+O site fica em `website/` (HTML e CSS puros, sem dependências) e é publicado de graça pelo
+GitHub Pages a cada push na `main` ([workflow](.github/workflows/pages.yml)). Na primeira vez,
+ative em **Settings → Pages → Source: GitHub Actions**. Para ver localmente:
+`make website && python3 -m http.server -d build/website`.
 
 ## Fontes de dados
 
 | Seção | Endpoint |
 |---|---|
+| Sincronização (opcional) | API v2 do gPodder (`/api/2/...`) ou `/index.php/apps/gpoddersync/...` (Nextcloud) |
 | Top Podcasts / Top Episódios | `rss.marketingtools.apple.com/api/v2/br/podcasts/top/50/{podcasts,podcast-episodes}.json` |
 | Rankings por gênero | `itunes.apple.com/br/rss/toppodcasts/limit=50/genre={id}/json` |
 | Detalhes, episódios e busca | `itunes.apple.com/lookup` e `itunes.apple.com/search` |
@@ -165,9 +201,13 @@ curation of Apple Podcasts in Brazil: top charts, an Explore page with featured 
 shelves, an Up Next queue, continue listening, offline downloads, a sleep timer, pitch-preserving
 speed control and MPRIS integration. The interface is in Brazilian Portuguese.
 
-Install the `.deb` on Ubuntu 26.04+ (`sudo apt install ./podflow_0.1.0_all.deb`) or the Flatpak
-bundle on other distributions. Both are on the
+Followed shows and episode progress can optionally be synced with gpodder.net, Nextcloud
+(GPodder Sync) or any gPodder-compatible server, so it plays along with AntennaPod and Kasts.
+
+Install it from the Ubuntu App Center (`sudo snap install podflow`), the `.deb` on Ubuntu 26.04+
+(`sudo apt install ./podflow_0.2.0_all.deb`) or the Flatpak bundle on other distributions from the
 [Releases page](https://github.com/EuVinicios/Linux-Podcast/releases/latest).
+Website: <https://euvinicios.github.io/Linux-Podcast/>.
 Licensed under GPL-3.0-or-later. Not affiliated with Apple Inc.
 
 </details>

@@ -8,6 +8,7 @@ import logging
 import socket
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import zlib
 from typing import Any
@@ -88,6 +89,44 @@ def get_json(url: str, **kwargs: Any) -> Any:
         return json.loads(data.decode("utf-8", errors="replace"))
     except ValueError as error:
         raise NetworkError("Resposta JSON inválida", url=url) from error
+
+
+def request(method: str, url: str, *, body: Any = None, form: dict[str, str] | None = None,
+            headers: dict[str, str] | None = None, timeout: float = DEFAULT_TIMEOUT,
+            max_bytes: int = 16 * 1024 * 1024) -> tuple[int, bytes]:
+    """One HTTP request without retries (for APIs with side effects).
+
+    ``body`` is sent as JSON, ``form`` as urlencoded. Returns ``(status, body)``
+    for 2xx responses and raises :class:`NetworkError` (with ``status``) otherwise.
+    """
+    if config.OFFLINE:
+        raise OfflineError("Sem conexão (modo offline)", url=url)
+    merged = {"Accept": "application/json"}
+    data = None
+    if body is not None:
+        data = json.dumps(body).encode("utf-8")
+        merged["Content-Type"] = "application/json"
+    elif form is not None:
+        data = urllib.parse.urlencode(form).encode("utf-8")
+        merged["Content-Type"] = "application/x-www-form-urlencoded"
+    if headers:
+        merged.update(headers)
+    req = _request(url, merged)
+    req.method = method.upper()
+    req.data = data
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            payload = response.read(max_bytes + 1)
+            if len(payload) > max_bytes:
+                raise NetworkError("Resposta grande demais", url=url)
+            return response.status, _decode_body(payload,
+                                                 response.headers.get("Content-Encoding") or "")
+    except urllib.error.HTTPError as error:
+        raise NetworkError(f"HTTP {error.code}", status=error.code, url=url) from error
+    except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError, OSError,
+            zlib.error, EOFError) as error:
+        raise NetworkError(str(getattr(error, "reason", error)) or type(error).__name__,
+                           url=url) from error
 
 
 def open_stream(url: str, *, timeout: float = 30, headers: dict[str, str] | None = None):

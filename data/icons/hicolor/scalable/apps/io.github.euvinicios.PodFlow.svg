@@ -1,29 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
   <defs>
-    <linearGradient id="face" x1="14" y1="10" x2="114" y2="114" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7c3aed"/>
-      <stop offset="0.55" stop-color="#d9338a"/>
-      <stop offset="1" stop-color="#fb7a3c"/>
+    <linearGradient id="base" x1="0" y1="20" x2="0" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5b21b6"/>
+      <stop offset="1" stop-color="#3b0f7a"/>
     </linearGradient>
-    <linearGradient id="base" x1="12" y1="20" x2="116" y2="120" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#4c1d95"/>
-      <stop offset="1" stop-color="#9a2b4f"/>
+    <linearGradient id="face" x1="0" y1="10" x2="0" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e07bff"/>
+      <stop offset="0.5" stop-color="#a64cf0"/>
+      <stop offset="1" stop-color="#6d28d9"/>
     </linearGradient>
-    <radialGradient id="shine" cx="38" cy="22" r="96" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.32"/>
-      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0.04"/>
+    <radialGradient id="glow" cx="64" cy="4" r="84" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.05"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="glyph" x1="0" y1="40" x2="0" y2="90" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ink" x1="0" y1="24" x2="0" y2="100" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#fdeef6"/>
+      <stop offset="1" stop-color="#f6ecff"/>
     </linearGradient>
   </defs>
-  <rect x="12" y="16" width="104" height="104" rx="28" fill="url(#base)"/>
-  <rect x="12" y="10" width="104" height="104" rx="28" fill="url(#face)"/>
-  <rect x="12" y="10" width="104" height="104" rx="28" fill="url(#shine)"/>
-  <path d="M33 45.5 C33 40.2 38.6 37 43.2 39.7 L66.6 53.4 C71.1 56 71.1 62.5 66.6 65.1 L43.2 78.8 C38.6 81.5 33 78.3 33 73 Z" fill="url(#glyph)"/>
-  <rect x="75" y="51" width="8.5" height="20" rx="4.25" fill="#ffffff" fill-opacity="0.95"/>
-  <rect x="87.5" y="40" width="8.5" height="42" rx="4.25" fill="#ffffff" fill-opacity="0.88"/>
-  <rect x="100" y="48" width="8.5" height="26" rx="4.25" fill="#ffffff" fill-opacity="0.78"/>
+  <rect x="12" y="16" width="104" height="104" rx="26" fill="url(#base)"/>
+  <rect x="12" y="10" width="104" height="104" rx="26" fill="url(#face)"/>
+  <rect x="12" y="10" width="104" height="104" rx="26" fill="url(#glow)"/>
+  <g fill="#3b0f7a" fill-opacity="0.22" transform="translate(0 1.5)">
+    <path d="M52.5 51.9Q52.5 47.5 56.31 49.71L73.69 59.79Q77.5 62 73.69 64.21L56.31 74.29Q52.5 76.5 52.5 72.1Z"/>
+    <path d="M86.9 42.78A29.9 29.9 0 0 1 86.9 81.22A3.4 3.4 0 0 1 81.7 76.85A23.1 23.1 0 0 0 81.7 47.15A3.4 3.4 0 0 1 86.9 42.78Z"/>
+    <path d="M41.1 81.22A29.9 29.9 0 0 1 41.1 42.78A3.4 3.4 0 0 1 46.3 47.15A23.1 23.1 0 0 0 46.3 76.85A3.4 3.4 0 0 1 41.1 81.22Z"/>
+    <path d="M97.41 35.9A42.4 42.4 0 0 1 97.41 88.1A3.4 3.4 0 0 1 92.05 83.92A35.6 35.6 0 0 0 92.05 40.08A3.4 3.4 0 0 1 97.41 35.9Z"/>
+    <path d="M30.59 88.1A42.4 42.4 0 0 1 30.59 35.9A3.4 3.4 0 0 1 35.95 40.08A35.6 35.6 0 0 0 35.95 83.92A3.4 3.4 0 0 1 30.59 88.1Z"/>
+  </g>
+  <g fill="url(#ink)">
+    <path d="M52.5 51.9Q52.5 47.5 56.31 49.71L73.69 59.79Q77.5 62 73.69 64.21L56.31 74.29Q52.5 76.5 52.5 72.1Z"/>
+    <path d="M86.9 42.78A29.9 29.9 0 0 1 86.9 81.22A3.4 3.4 0 0 1 81.7 76.85A23.1 23.1 0 0 0 81.7 47.15A3.4 3.4 0 0 1 86.9 42.78Z"/>
+    <path d="M41.1 81.22A29.9 29.9 0 0 1 41.1 42.78A3.4 3.4 0 0 1 46.3 47.15A23.1 23.1 0 0 0 46.3 76.85A3.4 3.4 0 0 1 41.1 81.22Z"/>
+    <path d="M97.41 35.9A42.4 42.4 0 0 1 97.41 88.1A3.4 3.4 0 0 1 92.05 83.92A35.6 35.6 0 0 0 92.05 40.08A3.4 3.4 0 0 1 97.41 35.9Z" fill-opacity="0.78"/>
+    <path d="M30.59 88.1A42.4 42.4 0 0 1 30.59 35.9A3.4 3.4 0 0 1 35.95 40.08A35.6 35.6 0 0 0 35.95 83.92A3.4 3.4 0 0 1 30.59 88.1Z" fill-opacity="0.78"/>
+  </g>
 </svg>

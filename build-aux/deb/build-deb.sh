@@ -36,10 +36,10 @@ Architecture: all
 Maintainer: EuVinicios <EuVinicios@users.noreply.github.com>
 Installed-Size: $INSTALLED_SIZE
 Depends: python3 (>= 3.11), python3-gi (>= 3.50), gir1.2-glib-2.0, gir1.2-gtk-4.0 (>= 4.20), gir1.2-adw-1 (>= 1.9), gir1.2-graphene-1.0, gir1.2-pango-1.0, gir1.2-gdkpixbuf-2.0, gir1.2-gstreamer-1.0, gir1.2-gst-plugins-base-1.0, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good
-Recommends: gstreamer1.0-libav, gstreamer1.0-pipewire | gstreamer1.0-pulseaudio
+Recommends: gir1.2-secret-1, gstreamer1.0-libav, gstreamer1.0-pipewire | gstreamer1.0-pulseaudio
 Section: sound
 Priority: optional
-Homepage: https://github.com/EuVinicios/Linux-Podcast
+Homepage: https://euvinicios.github.io/Linux-Podcast/
 Description: native GNOME podcast player with Brazilian charts
  PodFlow is a podcast app for GNOME built with GTK 4 and Libadwaita,
  inspired by the curation of Apple Podcasts in Brazil: top podcasts and
@@ -47,6 +47,9 @@ Description: native GNOME podcast player with Brazilian charts
  Up Next queue, continue listening, offline downloads, a sleep timer and
  pitch-preserving playback speed. Integrates with GNOME Shell media
  controls through MPRIS.
+ .
+ Followed shows and episode progress can optionally be synced with
+ gpodder.net, Nextcloud (GPodder Sync) or any gPodder-compatible server.
 EOF
 
 dpkg-deb --root-owner-group -Zxz --build "$STAGE" "$OUTPUT" >/dev/null

@@ -118,6 +118,17 @@ class PlaybackManagerTests(unittest.TestCase):
         self.assertEqual(self.db.get_setting("last_episode"), first.id)
         self.assertEqual([e.id for e in self.db.list_history()], [first.id])
 
+    def test_pause_queues_sync_action(self):
+        self.db.sync_recording = True
+        first = self.episodes[0]
+        self.manager.play_episode(first)
+        self.assertTrue(run_until(lambda: self.manager.player.position > 1.05, 5))
+        self.manager.pause()
+        pending = self.db.sync_pending()
+        self.assertEqual([(p["episode_id"], p["action"]) for p in pending], [(first.id, "play")])
+        self.assertGreaterEqual(pending[0]["position"], 1)
+        self.assertEqual(pending[0]["started"], 0)
+
     def test_restore_session_is_lazy(self):
         first = self.episodes[0]
         self.db.save_progress(first.id, 0.5, 2)

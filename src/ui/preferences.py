@@ -1,16 +1,38 @@
-"""Preferences dialog: appearance and storage."""
+"""Preferences dialog: appearance, storage and the sync account."""
 
 from __future__ import annotations
 
-from gi.repository import Adw, Gio, Gtk
+from gi.repository import Adw, Gdk, Gio, Gtk
 
 from ..i18n import _
 from ..utils.time_format import format_size
 from .helpers import get_app
+from .sync_page import SyncPage
 
 SCHEMES = (("system", "Seguir o sistema", Adw.ColorScheme.DEFAULT),
            ("light", "Claro", Adw.ColorScheme.FORCE_LIGHT),
            ("dark", "Escuro", Adw.ColorScheme.FORCE_DARK))
+
+
+# Same family as the app icon; white text on it passes WCAG AA (4.9:1).
+BRAND_ACCENT = "#9b3fe8"
+ACCENTS = (("brand", "Roxo do PodFlow"), ("system", "Cor de destaque do sistema"))
+_accent_provider: Gtk.CssProvider | None = None
+
+
+def apply_accent(value: str) -> None:
+    """Paint Libadwaita's accent with the brand purple, or follow GNOME's setting."""
+    global _accent_provider
+    display = Gdk.Display.get_default()
+    if display is None:
+        return
+    if _accent_provider is None:
+        _accent_provider = Gtk.CssProvider()
+        _accent_provider.load_from_string(f":root {{ --accent-bg-color: {BRAND_ACCENT}; }}")
+    Gtk.StyleContext.remove_provider_for_display(display, _accent_provider)
+    if value != "system":
+        Gtk.StyleContext.add_provider_for_display(display, _accent_provider,
+                                                  Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 
 def apply_color_scheme(value: str) -> None:
@@ -24,10 +46,11 @@ def apply_color_scheme(value: str) -> None:
 class PreferencesDialog(Adw.PreferencesDialog):
     __gtype_name__ = "PodFlowPreferencesDialog"
 
-    def __init__(self):
+    def __init__(self, page_name: str | None = None):
         super().__init__(title=_("Preferências"), search_enabled=False)
         app = get_app()
-        page = Adw.PreferencesPage(title=_("Geral"), icon_name="preferences-system-symbolic")
+        page = Adw.PreferencesPage(title=_("Geral"), name="general",
+                                   icon_name="preferences-system-symbolic")
         self.add(page)
 
         appearance = Adw.PreferencesGroup(title=_("Aparência"))
@@ -40,6 +63,15 @@ class PreferencesDialog(Adw.PreferencesDialog):
         theme.set_selected(keys.index(current) if current in keys else 0)
         theme.connect("notify::selected", self._on_theme, keys)
         appearance.add(theme)
+
+        accent = Adw.ComboRow(title=_("Cor de destaque"),
+                              model=Gtk.StringList.new([_(label) for _k, label in ACCENTS]))
+        current_accent = app.db.get_setting("accent", "brand")
+        accent_keys = [key for key, _label in ACCENTS]
+        accent.set_selected(accent_keys.index(current_accent)
+                            if current_accent in accent_keys else 0)
+        accent.connect("notify::selected", self._on_accent, accent_keys)
+        appearance.add(accent)
 
         storage = Adw.PreferencesGroup(title=_("Armazenamento"))
         page.add(storage)
@@ -61,12 +93,20 @@ class PreferencesDialog(Adw.PreferencesDialog):
                                                    "da Apple para o Brasil. Os episódios são "
                                                    "reproduzidos direto dos feeds dos produtores."))
         page.add(about)
+        self.add(SyncPage(self))
+        if page_name:
+            self.set_visible_page_name(page_name)
         self._update_sizes()
 
     def _on_theme(self, row: Adw.ComboRow, _pspec, keys: list[str]) -> None:
         value = keys[row.get_selected()]
         get_app().db.set_setting("color_scheme", value)
         apply_color_scheme(value)
+
+    def _on_accent(self, row: Adw.ComboRow, _pspec, keys: list[str]) -> None:
+        value = keys[row.get_selected()]
+        get_app().db.set_setting("accent", value)
+        apply_accent(value)
 
     def _update_sizes(self) -> None:
         app = get_app()

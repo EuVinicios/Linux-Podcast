@@ -37,6 +37,39 @@ class DatabaseTests(unittest.TestCase):
         self.db._seed()
         self.assertFalse(self.db.get_podcast("itunes:381816509").subscribed)
 
+    def test_migrates_v1_database(self):
+        import sqlite3
+        import tempfile
+        path = tempfile.mktemp(suffix=".db")
+        Database(path, seed=False).close()
+        conn = sqlite3.connect(path)
+        conn.execute("DROP TABLE sync_actions")
+        conn.execute("PRAGMA user_version = 1")
+        conn.commit()
+        conn.close()
+        db = Database(path, seed=False)
+        db.sync_recording = True
+        db.upsert_podcast(Podcast(id="feed:m", title="M", feed_url="https://m/f"))
+        db.upsert_episodes("feed:m", [episode("feed:m", "g", "Ep", 1)])
+        db.set_played(make_episode_id("feed:m", "g"), True)
+        self.assertEqual(db.sync_count_pending(), 1)
+        db.close()
+
+    def test_sync_recording_is_opt_in(self):
+        target = self.episodes[0]
+        self.db.set_played(target.id, True)
+        self.assertEqual(self.db.sync_count_pending(), 0)
+        self.db.sync_recording = True
+        self.db.set_played(target.id, False)
+        self.db.save_progress(target.id, 120, 1800)
+        self.db.sync_record(target.id, "play", 30, 120, 1800)
+        pending = self.db.sync_pending()
+        self.assertEqual(len(pending), 1)  # only the latest action per episode
+        self.assertEqual((pending[0]["action"], pending[0]["position"]), ("play", 120))
+        self.assertEqual(pending[0]["feed_url"], "https://x/f")
+        self.db.sync_done(pending)
+        self.assertEqual(self.db.sync_count_pending(), 0)
+
     def test_upsert_podcast_keeps_existing_text(self):
         self.db.upsert_podcast(Podcast(id="feed:abc", title="", author="", description="Nova"))
         stored = self.db.get_podcast("feed:abc")

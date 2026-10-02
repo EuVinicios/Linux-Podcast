@@ -4,6 +4,27 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.2.0] - 2026-10-02
+
+### Adicionado
+
+- **Conta e sincronização**: programas seguidos e progresso dos episódios sincronizados com
+  gpodder.net, Nextcloud (app GPodder Sync, com login pelo navegador) ou qualquer servidor
+  compatível com o gPodder (oPodSync, mygpo). Funciona junto com AntennaPod, gPodder e Kasts.
+- A senha da sincronização fica no chaveiro do sistema (libsecret / portal de segredos).
+- Pacote **snap** (`core26` + extensão GNOME) para a Central de Aplicativos do Ubuntu, com
+  workflow que publica na Snap Store.
+- **Site do projeto** no GitHub Pages, com política de privacidade.
+- Preferência “Cor de destaque”: roxo do PodFlow ou a cor do sistema.
+
+### Alterado
+
+- Novo ícone: gradiente roxo, com o símbolo de play entre ondas de transmissão.
+- Cor de destaque roxa por padrão, combinando com o ícone.
+- Metainfo com site, perguntas frequentes, guia de contribuição e notas da versão.
+- O lançador encontra o app ao lado do executável (instalações relocadas, como o snap).
+- `make` sem alvo não abre mais o app; use `make run`.
+
 ## [0.1.0] - 2026-10-02
 
 Primeira versão pública. 🎉
@@ -27,4 +48,5 @@ Primeira versão pública. 🎉
 - Busca no catálogo da Apple e adição de podcasts por URL de feed RSS.
 - Pacotes `.deb` (Ubuntu 26.04+) e Flatpak (GNOME 50) gerados automaticamente no GitHub Actions.
 
+[0.2.0]: https://github.com/EuVinicios/Linux-Podcast/releases/tag/v0.2.0
 [0.1.0]: https://github.com/EuVinicios/Linux-Podcast/releases/tag/v0.1.0

@@ -522,3 +522,18 @@ scale.mini-progress > trough > slider {
   color: var(--accent-fg-color);
   background-color: var(--accent-bg-color);
 }
+
+/* ---------- Sync ---------- */
+
+.sync-hero {
+  margin: 4px 12px 8px 12px;
+}
+
+.sync-hero-icon {
+  background-color: var(--accent-bg-color);
+  color: var(--accent-fg-color);
+  border-radius: 999px;
+  padding: 18px;
+  margin-bottom: 6px;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent-bg-color) 35%, transparent);
+}

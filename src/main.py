@@ -17,8 +17,9 @@ from .core.library import Library
 from .core.mpris import MprisService
 from .core.playback import PlaybackManager
 from .core.player import AudioPlayer
+from .core.sync import SyncManager
 from .i18n import _
-from .ui.preferences import PreferencesDialog, apply_color_scheme
+from .ui.preferences import PreferencesDialog, apply_accent, apply_color_scheme
 from .utils import tasks
 from .utils.cache import ImageCache
 
@@ -44,6 +45,7 @@ class PodFlowApplication(Adw.Application):
         self.playback: PlaybackManager | None = None
         self.downloads: DownloadManager | None = None
         self.mpris: MprisService | None = None
+        self.sync: SyncManager | None = None
 
     # -- lifecycle -------------------------------------------------------------------
 
@@ -68,9 +70,11 @@ class PodFlowApplication(Adw.Application):
         self.library = Library(self.db, self.apple, itunes)
         self.playback = PlaybackManager(self.db, AudioPlayer(), app=self)
         self.downloads = DownloadManager(self.db)
+        self.sync = SyncManager(self.db, self.library, self.playback)
         self.mpris = MprisService(self.playback, self.db, self.images, app=self)
         self.mpris.start()
         apply_color_scheme(self.db.get_setting("color_scheme", "system"))
+        apply_accent(self.db.get_setting("accent", "brand"))
 
         self._install_actions()
         self.downloads.connect("finished", self._on_download_finished)
@@ -79,6 +83,9 @@ class PodFlowApplication(Adw.Application):
         self.playback.connect("sleep-timer-changed", lambda *_: self._sync_sleep_action())
         self.playback.connect("rate-changed", lambda _pb, rate: self.lookup_action(
             "playback-rate").set_state(GLib.Variant("d", round(rate, 2))))
+        self.sync.connect("changed", lambda *_: self._sync_sync_action())
+        self.sync.connect("finished", self._on_sync_finished)
+        self._sync_sync_action()
 
     def do_activate(self) -> None:
         if self.window is None:
@@ -86,6 +93,7 @@ class PodFlowApplication(Adw.Application):
             self.window = PodFlowWindow(self)
             self.playback.restore_session()
             GLib.timeout_add_seconds(2, self._initial_refresh)
+            self.sync.start()
         self.window.present()
 
     def _initial_refresh(self) -> bool:
@@ -94,6 +102,8 @@ class PodFlowApplication(Adw.Application):
 
     def do_shutdown(self) -> None:
         try:
+            if self.sync is not None:
+                self.sync.stop()
             if self.mpris is not None:
                 self.mpris.stop()
             if self.playback is not None:
@@ -129,6 +139,8 @@ class PodFlowApplication(Adw.Application):
             "quit": self.quit,
             "about": self._show_about,
             "preferences": lambda: PreferencesDialog().present(self.get_active_window()),
+            "account": lambda: PreferencesDialog("sync").present(self.get_active_window()),
+            "sync": lambda: self.sync.sync_now(manual=True),
             "shortcuts": self._show_shortcuts,
             "refresh": lambda: self.library.refresh_subscriptions(force=True),
             "add-feed": self._show_add_feed,
@@ -235,6 +247,20 @@ class PodFlowApplication(Adw.Application):
             if action.get_state().get_int32() != 0:
                 action.set_state(GLib.Variant("i", 0))
 
+    def _sync_sync_action(self) -> None:
+        self.lookup_action("sync").set_enabled(self.sync.configured and not self.sync.syncing)
+
+    def _on_sync_finished(self, _sync, error: str, manual: bool, summary) -> None:
+        window = self.window
+        if not manual or window is None or window.get_visible_dialog() is not None:
+            return
+        if error:
+            self._toast(_("Não foi possível sincronizar: {error}").format(error=error))
+        else:
+            details = summary.describe() if summary is not None else ""
+            self._toast(_("Sincronizado: {details}").format(details=details) if details
+                        else _("Tudo sincronizado"))
+
     def _on_download_finished(self, _downloads, episode_id: str) -> None:
         episode = self.db.get_episode(episode_id)
         if episode is None:
@@ -266,7 +292,17 @@ class PodFlowApplication(Adw.Application):
             comments=_("Um app de podcasts nativo para o GNOME, com rankings e novidades "
                        "do Brasil."),
             developers=[f"{config.DEVELOPER} https://github.com/EuVinicios"],
+            support_url=f"{config.WEBSITE}#perguntas",
+            release_notes_version=config.VERSION,
+            release_notes=_(
+                "<p>Contas e sincronização, visual novo e pacote snap.</p><ul>"
+                "<li>Sincronize programas e progresso com gpodder.net, Nextcloud ou um "
+                "servidor compatível com o gPodder</li>"
+                "<li>Novo ícone e cor de destaque roxa (ou a do sistema, nas Preferências)</li>"
+                "<li>Senhas guardadas no chaveiro do sistema</li></ul>"),
         )
+        about.add_link(_("Código-fonte"), config.REPOSITORY)
+        about.add_link(_("Política de privacidade"), f"{config.WEBSITE}privacidade.html")
         about.add_legal_section(
             _("Dados do catálogo"),
             _("Rankings, buscas e capas são fornecidos pelas APIs públicas da Apple. "
