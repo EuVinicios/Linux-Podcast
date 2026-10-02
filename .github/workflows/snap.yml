@@ -34,13 +34,54 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Same setup as snapcore/action-build, plus a stopgap: Snapcraft 9.1.x
+      # rejects the gnome extension on core26. The fix (canonical/snapcraft#6278,
+      # commit c05aed0) ships in 9.2; until the installed Snapcraft has it, this
+      # step applies that commit to the installed snap. It turns itself off as
+      # soon as the channel carries the fix.
+      - name: Preparar LXD e Snapcraft
+        run: |
+          set -euo pipefail
+          sudo groupadd --force --system lxd
+          sudo usermod --append --groups lxd "$USER"
+          sudo snap install lxd || sudo snap refresh lxd
+          sudo lxd init --auto
+          sudo iptables -P FORWARD ACCEPT
+          sudo snap install snapcraft --classic --channel latest/edge
+          snapcraft --version
+
+          gnome_py=$(find /snap/snapcraft/current -path '*/snapcraft/extensions/gnome.py' -print -quit)
+          if grep -q '"core26": "gnome-core26-sdk"' "$gnome_py"; then
+            echo "Snapcraft já suporta core26 na extensão gnome."
+            exit 0
+          fi
+
+          echo "Aplicando canonical/snapcraft#6278 ao Snapcraft instalado."
+          fix=https://raw.githubusercontent.com/canonical/snapcraft/c05aed0c1328725c0c4da8534151b37720bd67a8
+          rev=$(snap list snapcraft | awk 'NR == 2 { print $3 }')
+          work=$(mktemp -d)
+          sudo unsquashfs -q -d "$work/snapcraft" "/var/lib/snapd/snaps/snapcraft_${rev}.snap"
+          pkg="$work/snapcraft/${gnome_py#/snap/snapcraft/current/}"
+          pkg="${pkg%/extensions/gnome.py}"
+          sudo curl -fsSL -o "$pkg/extensions/gnome.py" "$fix/snapcraft/extensions/gnome.py"
+          sudo curl -fsSL -o "$pkg/parts/desktop_file.py" "$fix/snapcraft/parts/desktop_file.py"
+          sudo find "$pkg/extensions/__pycache__" "$pkg/parts/__pycache__" \
+            \( -name 'gnome.*.pyc' -o -name 'desktop_file.*.pyc' \) -delete 2>/dev/null || true
+          makefile=$(find "$work/snapcraft/share" -path '*/extensions/desktop/command-chain/Makefile' -print -quit)
+          [ -z "$makefile" ] || grep -q '^.NOTPARALLEL:' "$makefile" || echo '.NOTPARALLEL:' | sudo tee -a "$makefile" >/dev/null
+          sudo snap pack "$work/snapcraft" "$work"
+          sudo snap install --dangerous --classic "$work"/snapcraft_*.snap
+          grep -q '"core26": "gnome-core26-sdk"' "$gnome_py"
+          snapcraft --version
+
       - name: Gerar o snap
         id: build
-        uses: snapcore/action-build@v1
-        with:
-          # The gnome extension supports core26 from Snapcraft 9.2 on; until it
-          # reaches latest/stable the edge channel carries it.
-          snapcraft-channel: latest/edge
+        run: |
+          set -euo pipefail
+          # New login so the lxd group membership applies.
+          sudo -u "$USER" -E snapcraft pack --verbose
+          snap=$(ls -1 podflow_*.snap | head -n1)
+          echo "snap=$PWD/$snap" >> "$GITHUB_OUTPUT"
 
       - name: Verificar o snap
         run: |
