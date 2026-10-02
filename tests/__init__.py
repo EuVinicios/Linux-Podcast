@@ -12,6 +12,7 @@ os.environ["XDG_DATA_HOME"] = os.path.join(_ROOT, "data")
 os.environ["XDG_CACHE_HOME"] = os.path.join(_ROOT, "cache")
 os.environ.setdefault("PODFLOW_OFFLINE", "1")
 os.environ.setdefault("PODFLOW_AUDIO_SINK", "fakesink")
+os.environ.setdefault("PODFLOW_SECRETS", "file")  # never touch the real keyring
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 

@@ -1,0 +1,57 @@
+name: podflow
+# Title, summary, description and version come from the AppStream metainfo
+# (parse-info), so the Snap Store and the Ubuntu App Center show exactly what
+# GNOME Software shows. License and links are explicit for the store listing.
+adopt-info: podflow
+icon: data/icons/hicolor/scalable/apps/io.github.euvinicios.PodFlow.svg
+license: GPL-3.0-or-later
+website: https://euvinicios.github.io/Linux-Podcast/
+source-code: https://github.com/EuVinicios/Linux-Podcast
+issues: https://github.com/EuVinicios/Linux-Podcast/issues
+contact: https://github.com/EuVinicios/Linux-Podcast/issues
+base: core26
+grade: stable
+confinement: strict
+
+platforms:
+  amd64:
+  arm64:
+
+slots:
+  # GNOME Shell media controls and multimedia keys.
+  mpris:
+    interface: mpris
+    name: podflow
+
+apps:
+  podflow:
+    command: usr/bin/podflow
+    # GTK 4.22, Libadwaita, PyGObject, GStreamer and Python 3.14 come from the
+    # shared gnome-core26 runtime (GNOME 50).
+    extensions: [gnome]
+    common-id: io.github.euvinicios.PodFlow
+    desktop: usr/share/applications/io.github.euvinicios.PodFlow.desktop
+    slots: [mpris]
+    plugs:
+      - network
+      - network-status
+      - audio-playback
+      # Keeps the sync password in the GNOME keyring. Until the store grants
+      # auto-connection, users run: snap connect podflow:password-manager-service
+      - password-manager-service
+
+parts:
+  podflow:
+    plugin: nil
+    source: .
+    source-type: local
+    parse-info: [usr/share/metainfo/io.github.euvinicios.PodFlow.metainfo.xml]
+    override-build: |
+      make install DESTDIR="$CRAFT_PART_INSTALL" PREFIX=/usr PYTHON="/usr/bin/env python3"
+    stage-packages:
+      # AAC (.m4a) episodes; MP3, Opus and Vorbis decoders are in the runtime.
+      - gstreamer1.0-libav
+    prime:
+      - -usr/share/doc
+      - -usr/share/man
+      - -usr/share/lintian

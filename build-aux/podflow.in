@@ -1,9 +1,15 @@
 #!@PYTHON@
 """PodFlow launcher."""
 
+import os
 import sys
 
-sys.path.insert(1, "@PKGDATADIR@")
+# Prefer the package installed next to this script (<prefix>/share/podflow), so
+# relocated trees such as the snap work; fall back to the configured prefix.
+_relative = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                          os.pardir, "share", "podflow"))
+sys.path.insert(1, _relative if os.path.isdir(os.path.join(_relative, "podflow"))
+                else "@PKGDATADIR@")
 
 from podflow.main import main  # noqa: E402
 

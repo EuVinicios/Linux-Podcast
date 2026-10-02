@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacidade · PodFlow</title>
+  <meta name="description" content="Como o PodFlow trata os seus dados: sem conta obrigatória, sem anúncios e sem rastreamento.">
+  <meta name="theme-color" content="#9b3fe8">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://euvinicios.github.io/Linux-Podcast/privacidade.html">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Principal">
+      <a class="brand" href="./">
+        <img src="assets/icon.svg" alt="" width="32" height="32">
+        <span>PodFlow</span>
+      </a>
+      <ul class="links">
+        <li><a class="button small" href="./#instalar">Instalar</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="article">
+    <div class="wrap narrow">
+      <h1>Política de privacidade</h1>
+      <p>Última atualização: 2 de outubro de 2026.</p>
+
+      <p>
+        O PodFlow é um aplicativo de código aberto que roda no seu computador. Ele não tem
+        anúncios, não coleta estatísticas de uso e não envia nenhum dado para o desenvolvedor.
+      </p>
+
+      <h2>O que fica no seu computador</h2>
+      <ul>
+        <li>Programas seguidos, progresso dos episódios, fila e histórico: <code>~/.local/share/podflow/podflow.db</code>.</li>
+        <li>Episódios baixados: <code>~/.local/share/podflow/downloads/</code>.</li>
+        <li>Capas e rankings em cache: <code>~/.cache/podflow/</code>.</li>
+      </ul>
+      <p>Para apagar tudo, remova essas pastas (no Snap, elas ficam em <code>~/snap/podflow/</code>).</p>
+
+      <h2>Com quem o app conversa</h2>
+      <ul>
+        <li><strong>APIs públicas da Apple</strong>, para rankings, busca e capas. As requisições não levam identificação sua.</li>
+        <li><strong>O servidor de cada podcast</strong>, para baixar o feed e os episódios que você ouve.</li>
+        <li><strong>O servidor de sincronização que você escolher</strong> (gpodder.net, o seu Nextcloud ou outro), somente se você entrar com uma conta.</li>
+      </ul>
+
+      <h2>Sincronização</h2>
+      <p>
+        A sincronização é opcional. Quando ativada, o PodFlow envia ao servidor escolhido os
+        endereços dos feeds que você segue e o progresso dos episódios (posição, se terminou e
+        quando). Esses dados ficam sob a política do serviço escolhido. Para parar, use
+        <em>Menu → Conta e sincronização → Sair</em>; os dados locais continuam no seu computador.
+      </p>
+      <p>
+        A senha é guardada no chaveiro do sistema (GNOME Keyring). Se o chaveiro não estiver
+        disponível, ela fica num arquivo que só o seu usuário pode ler.
+      </p>
+
+      <h2>Contato</h2>
+      <p>Dúvidas ou sugestões: abra um relato em <a href="https://github.com/EuVinicios/Linux-Podcast/issues">GitHub Issues</a>.</p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <a class="brand" href="./">
+        <img src="assets/icon.svg" alt="" width="24" height="24">
+        <span>PodFlow</span>
+      </a>
+      <p class="small">© 2026 EuVinicios · GPL-3.0-or-later · Não afiliado à Apple Inc.</p>
+    </div>
+  </footer>
+</body>
+</html>

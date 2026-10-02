@@ -89,6 +89,21 @@ def format_date(timestamp: float | None, now: float | None = None) -> str:
     return label
 
 
+def format_relative(timestamp: float | None, now: float | None = None) -> str:
+    """Agora mesmo, Há 5 min, Há 3 h, then the calendar date (Ontem, 25 de set.)."""
+    if not timestamp or timestamp <= 0:
+        return ""
+    now = now if now is not None else time.time()
+    elapsed = max(0, int(now - timestamp))
+    if elapsed < 60:
+        return "Agora mesmo"
+    if elapsed < 3600:
+        return f"Há {elapsed // 60} min"
+    if elapsed < 6 * 3600 or _to_date(timestamp) == _to_date(now):
+        return f"Há {elapsed // 3600} h"
+    return format_date(timestamp, now)
+
+
 def format_long_date(timestamp: float | None) -> str:
     """25 de set. de 2026 (always with the year)."""
     if not timestamp or timestamp <= 0:

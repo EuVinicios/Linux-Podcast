@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PodFlow · Podcasts para o GNOME</title>
+  <meta name="description" content="App de podcasts nativo para Linux, com os rankings e as novidades do Brasil. Gratuito, de código aberto, sem anúncios e com sincronização opcional.">
+  <meta name="theme-color" content="#9b3fe8">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="canonical" href="https://euvinicios.github.io/Linux-Podcast/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PodFlow · Podcasts para o GNOME">
+  <meta property="og:description" content="Os rankings e as novidades dos podcasts do Brasil num app nativo para Linux.">
+  <meta property="og:image" content="https://euvinicios.github.io/Linux-Podcast/screenshots/explore.png">
+  <meta property="og:locale" content="pt_BR">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Principal">
+      <a class="brand" href="#">
+        <img src="assets/icon.svg" alt="" width="32" height="32">
+        <span>PodFlow</span>
+      </a>
+      <ul class="links">
+        <li><a href="#recursos">Recursos</a></li>
+        <li><a href="#sincronizacao">Sincronização</a></li>
+        <li><a href="#perguntas">Perguntas</a></li>
+        <li><a class="button small" href="#instalar">Instalar</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="conteudo">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-text">
+          <img class="hero-icon" src="assets/icon.svg" alt="Ícone do PodFlow" width="112" height="112">
+          <h1>Os podcasts do Brasil, do jeito do GNOME.</h1>
+          <p class="lead">
+            Rankings, novidades e os seus programas favoritos num app nativo para Linux,
+            leve e bonito. Gratuito, de código aberto e sem anúncios.
+          </p>
+          <div class="actions">
+            <a class="button" href="#instalar">Instalar o PodFlow</a>
+            <a class="button ghost" href="https://github.com/EuVinicios/Linux-Podcast">Ver o código</a>
+          </div>
+          <ul class="pills" aria-label="Destaques">
+            <li>GTK 4 + Libadwaita</li>
+            <li>GPL-3.0</li>
+            <li>Sem rastreamento</li>
+          </ul>
+        </div>
+        <picture class="shot hero-shot">
+          <source srcset="screenshots/explore.png" media="(prefers-color-scheme: dark)">
+          <img src="screenshots/explore-light.png" alt="Tela Explorar do PodFlow com destaques da semana" width="1270" height="810">
+        </picture>
+      </div>
+    </section>
+
+    <section id="recursos" class="section">
+      <div class="wrap">
+        <h2>Tudo o que um bom app de podcasts precisa</h2>
+        <p class="section-lead">Inspirado na curadoria do Apple Podcasts no Brasil e desenhado com as diretrizes do GNOME.</p>
+        <div class="grid">
+          <article class="card">
+            <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
+            <h3>Rankings do Brasil</h3>
+            <p>Top Podcasts e Top Episódios, de 1 a 50, com filtro por categoria e atualizados todos os dias.</p>
+          </article>
+          <article class="card">
+            <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.3 5.7L20 11l-5.7 2.3L12 19l-2.3-5.7L4 11l5.7-2.3z"/></svg>
+            <h3>Explorar</h3>
+            <p>Destaques da semana com as cores de cada capa, “Em Alta” e prateleiras por gênero.</p>
+          </article>
+          <article class="card">
+            <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/></svg>
+            <h3>Ouvir Agora</h3>
+            <p>Continue de onde parou, monte a fila A Seguir e veja os episódios novos de quem você segue.</p>
+          </article>
+          <article class="card">
+            <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/></svg>
+            <h3>Player completo</h3>
+            <p>Velocidade de 0,5× a 2,5× sem alterar o tom da voz, −15 s / +30 s e timer de sono.</p>
+          </article>
+          <article class="card">
+            <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+            <h3>Funciona offline</h3>
+            <p>Baixe episódios para ouvir sem internet. Rankings e capas ficam em cache.</p>
+          </article>
+          <article class="card">
+            <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+            <h3>Integrado ao sistema</h3>
+            <p>Controles de mídia do GNOME, teclas multimídia, tema claro/escuro e layout para telas estreitas.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="sincronizacao" class="section tinted">
+      <div class="wrap split">
+        <div>
+          <h2>Seus podcasts em todos os lugares</h2>
+          <p>
+            Crie uma conta gratuita e sincronize os programas que você segue e onde parou em cada
+            episódio, entre computadores e celulares. O PodFlow usa o protocolo aberto do
+            <strong>gPodder</strong>, o mesmo de apps como AntennaPod, gPodder e Kasts.
+          </p>
+          <ul class="checks">
+            <li><strong>gpodder.net</strong>: gratuito e de código aberto, conta em segundos.</li>
+            <li><strong>Nextcloud</strong>: na sua própria nuvem, com o app GPodder Sync e login pelo navegador.</li>
+            <li><strong>Servidor próprio</strong>: oPodSync, mygpo ou outro compatível.</li>
+          </ul>
+          <p class="note">A senha fica no chaveiro do sistema. Seus dados vão só para o servidor que você escolher.</p>
+        </div>
+        <picture class="shot">
+          <source srcset="screenshots/sync.png" media="(prefers-color-scheme: dark)">
+          <img src="screenshots/sync-light.png" alt="Tela de sincronização com as opções gpodder.net, Nextcloud e outro servidor" width="1270" height="810" loading="lazy">
+        </picture>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <h2>Feito para o seu desktop</h2>
+        <div class="gallery">
+          <figure>
+            <img src="screenshots/podcast.png" alt="Página de um programa com a lista de episódios" width="1270" height="810" loading="lazy">
+            <figcaption>Página do programa</figcaption>
+          </figure>
+          <figure>
+            <img src="screenshots/charts.png" alt="Ranking dos podcasts mais ouvidos no Brasil" width="1270" height="810" loading="lazy">
+            <figcaption>Rankings</figcaption>
+          </figure>
+          <figure>
+            <img src="screenshots/listen-now.png" alt="Ouvir Agora com Continuar Ouvindo" width="1270" height="810" loading="lazy">
+            <figcaption>Ouvir Agora</figcaption>
+          </figure>
+          <figure>
+            <img src="screenshots/library.png" alt="Biblioteca com os programas seguidos" width="1270" height="810" loading="lazy">
+            <figcaption>Biblioteca</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="instalar" class="section tinted">
+      <div class="wrap">
+        <h2>Instale em um minuto</h2>
+        <p class="section-lead">Para Ubuntu 26.04 LTS ou mais recente e outras distribuições com GNOME 50.</p>
+        <div class="grid install">
+          <article class="card">
+            <h3>Central de Aplicativos <span class="tag">Snap</span></h3>
+            <p>Procure por <strong>PodFlow</strong> na Central de Aplicativos do Ubuntu ou use o terminal:</p>
+            <pre><code>sudo snap install podflow</code></pre>
+            <p class="small">Para guardar a senha da sincronização no chaveiro:<br><code>sudo snap connect podflow:password-manager-service</code></p>
+          </article>
+          <article class="card">
+            <h3>Pacote .deb <span class="tag">Ubuntu</span></h3>
+            <p>Leve (≈ 80 KB) e integrado ao sistema. Baixe na página de versões e instale:</p>
+            <pre><code>sudo apt install ./podflow_*_all.deb</code></pre>
+            <p><a href="https://github.com/EuVinicios/Linux-Podcast/releases/latest">Baixar a versão mais recente →</a></p>
+          </article>
+          <article class="card">
+            <h3>Flatpak <span class="tag">outras distros</span></h3>
+            <p>Baixe o <code>PodFlow.flatpak</code> na página de versões e instale:</p>
+            <pre><code>flatpak install --user ./PodFlow.flatpak</code></pre>
+            <p><a href="https://github.com/EuVinicios/Linux-Podcast/releases/latest">Baixar a versão mais recente →</a></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="perguntas" class="section">
+      <div class="wrap narrow">
+        <h2>Perguntas frequentes</h2>
+        <details>
+          <summary>O PodFlow é gratuito?</summary>
+          <p>Sim. É software livre (GPL-3.0 ou posterior), sem anúncios, sem assinatura e sem rastreamento.</p>
+        </details>
+        <details>
+          <summary>Preciso criar uma conta?</summary>
+          <p>Não. A conta só é necessária para sincronizar com outros aparelhos. Sem ela, tudo fica salvo neste computador.</p>
+        </details>
+        <details>
+          <summary>Como sincronizo com o meu celular?</summary>
+          <p>Crie uma conta no gpodder.net (ou use o seu Nextcloud) e entre com ela no PodFlow em <em>Menu → Conta e sincronização</em>. No Android, o AntennaPod sincroniza com as mesmas contas.</p>
+        </details>
+        <details>
+          <summary>O PodFlow é da Apple?</summary>
+          <p>Não. É um projeto independente que usa as APIs públicas de rankings e busca da Apple. “Apple Podcasts” é marca registrada da Apple Inc.</p>
+        </details>
+        <details>
+          <summary>Onde ficam os meus dados?</summary>
+          <p>No seu computador: em <code>~/.local/share/podflow</code> (biblioteca e downloads) e <code>~/.cache/podflow</code> (capas). Leia a <a href="privacidade.html">política de privacidade</a>.</p>
+        </details>
+        <details>
+          <summary>Encontrei um problema. Como ajudo?</summary>
+          <p>Abra um relato em <a href="https://github.com/EuVinicios/Linux-Podcast/issues">GitHub Issues</a>. Contribuições são bem-vindas: veja o <a href="https://github.com/EuVinicios/Linux-Podcast/blob/main/CONTRIBUTING.md">guia de contribuição</a>.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-grid">
+      <div class="brand">
+        <img src="assets/icon.svg" alt="" width="24" height="24">
+        <span>PodFlow</span>
+      </div>
+      <nav aria-label="Rodapé">
+        <a href="https://github.com/EuVinicios/Linux-Podcast">GitHub</a>
+        <a href="https://github.com/EuVinicios/Linux-Podcast/releases">Versões</a>
+        <a href="https://github.com/EuVinicios/Linux-Podcast/issues">Relatar problema</a>
+        <a href="privacidade.html">Privacidade</a>
+      </nav>
+      <p class="small">© 2026 EuVinicios · GPL-3.0-or-later · Não afiliado à Apple Inc.</p>
+    </div>
+  </footer>
+</body>
+</html>

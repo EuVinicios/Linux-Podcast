@@ -5,6 +5,8 @@
 #   make install        install system-wide (PREFIX=/usr/local, DESTDIR supported)
 #   make deb            build dist/podflow_<version>_all.deb
 #   make flatpak        build and install the Flatpak locally (needs flatpak-builder)
+#   make snap           build the snap (needs snapcraft and LXD)
+#   make website        assemble the GitHub Pages site in build/website
 
 APP_ID      := io.github.euvinicios.PodFlow
 PREFIX      ?= /usr/local
@@ -18,9 +20,11 @@ VERSION     := $(shell sed -n 's/^VERSION = "\(.*\)"/\1/p' src/config.py)
 HEADLESS := $(shell command -v dbus-run-session >/dev/null 2>&1 && echo "dbus-run-session --") \
             $(shell command -v xvfb-run >/dev/null 2>&1 && echo "xvfb-run -a -s '-screen 0 1600x1000x24'")
 
-.PHONY: all run test test-live smoke screenshots validate install uninstall deb flatpak clean version
+.PHONY: all run test test-live smoke screenshots validate install uninstall deb flatpak snap \
+	website clean version
 
-all: run
+all:
+	@echo "Nada para compilar: use 'make run', 'make test' ou 'make install'."
 
 run:
 	$(PYTHON) -m src
@@ -39,11 +43,13 @@ smoke:
 	$(HEADLESS) env GDK_BACKEND=x11 $(PYTHON) tools/screenshots.py --smoke
 
 screenshots:
-	$(HEADLESS) env GDK_BACKEND=x11 $(PYTHON) tools/screenshots.py --narrow
+	$(HEADLESS) env GDK_BACKEND=x11 $(PYTHON) tools/screenshots.py --dark --narrow
 
 validate:
 	desktop-file-validate data/$(APP_ID).desktop
 	appstreamcli validate --no-net --explain data/$(APP_ID).metainfo.xml
+	@grep -q '<release version="$(VERSION)"' data/$(APP_ID).metainfo.xml || \
+		{ echo "metainfo sem <release> para $(VERSION)"; exit 1; }
 
 install:
 	install -d "$(DESTDIR)$(PKGDATADIR)/podflow"
@@ -73,6 +79,12 @@ deb:
 
 flatpak:
 	flatpak-builder --user --install --force-clean build/flatpak build-aux/flatpak/$(APP_ID).json
+
+snap:
+	snapcraft pack --output dist/
+
+website:
+	build-aux/website.sh build/website
 
 clean:
 	rm -rf build dist .test-data

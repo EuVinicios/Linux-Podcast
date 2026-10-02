@@ -1,0 +1,73 @@
+name: Snap
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "snap/**"
+      - "src/**"
+      - "data/**"
+      - "build-aux/**"
+      - "Makefile"
+      - ".github/workflows/snap.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snap:
+    name: Snap (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    env:
+      HAS_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS != '' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Gerar o snap
+        id: build
+        uses: snapcore/action-build@v1
+        with:
+          # The gnome extension supports core26 from Snapcraft 9.2 on; until it
+          # reaches latest/stable the edge channel carries it.
+          snapcraft-channel: latest/edge
+
+      - name: Verificar o snap
+        run: |
+          sudo snap install gnome-core26 gtk-common-themes mesa-2604
+          sudo snap install --dangerous "${{ steps.build.outputs.snap }}"
+          sudo snap connect podflow:gnome-core26 gnome-core26
+          sudo snap connect podflow:gpu-2604 mesa-2604:gpu-2604 || true
+          snap info --verbose "${{ steps.build.outputs.snap }}" | head -20
+          test -f /snap/podflow/current/meta/gui/io.github.euvinicios.PodFlow.desktop
+          # Python, PyGObject and the app package resolve inside the sandbox.
+          timeout 120 snap run podflow --version | tee version.txt
+          grep -q "^PodFlow " version.txt
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: podflow-snap-${{ matrix.arch }}
+          path: ${{ steps.build.outputs.snap }}
+          if-no-files-found: error
+
+      # main -> edge, tags v* -> candidate. Promote to stable on snapcraft.io
+      # (or with `snapcraft promote`) after testing. Needs the
+      # SNAPCRAFT_STORE_CREDENTIALS secret: see docs/publicar-na-central-de-apps.md.
+      - name: Publicar na Snap Store
+        if: github.event_name == 'push' && env.HAS_STORE_CREDENTIALS == 'true'
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: ${{ startsWith(github.ref, 'refs/tags/v') && 'candidate' || 'edge' }}

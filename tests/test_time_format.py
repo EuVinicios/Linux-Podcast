@@ -15,6 +15,14 @@ class TimeFormatTests(unittest.TestCase):
         self.assertEqual(tf.format_clock(None), "0:00")
         self.assertEqual(tf.format_clock(float("nan")), "0:00")
 
+    def test_relative(self):
+        now = datetime(2026, 10, 2, 15, 0).timestamp()
+        self.assertEqual(tf.format_relative(now - 20, now), "Agora mesmo")
+        self.assertEqual(tf.format_relative(now - 5 * 60, now), "Há 5 min")
+        self.assertEqual(tf.format_relative(now - 3 * 3600, now), "Há 3 h")
+        self.assertEqual(tf.format_relative(now - 26 * 3600, now), "Ontem")
+        self.assertEqual(tf.format_relative(0, now), "")
+
     def test_remaining(self):
         self.assertEqual(tf.format_remaining(60, 3600), "-59:00")
         self.assertEqual(tf.format_remaining(0, 3723), "-1:02:03")

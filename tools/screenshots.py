@@ -168,6 +168,16 @@ def start(app: PodFlowApplication) -> None:
     d.add("captura biblioteca", lambda: d.shot("library"), 0.3)
     for name in ("saved", "downloads", "history", "search"):
         d.add(name, lambda n=name: d.section(n), min(wait, 1.0))
+    d.add("explorar para conta", lambda: d.section("explore"), wait * 0.6)
+    d.add("conta", lambda: d.app.activate_action("account", None), wait * 0.4)
+    d.add("captura conta", lambda: d.shot("sync"), 0.3)
+    if ARGS.smoke:
+        for provider in ("gpodder", "nextcloud", "custom"):
+            d.add(f"login {provider}",
+                  lambda p=provider: d.win.get_visible_dialog().get_visible_page()._open_login(p),
+                  0.4)
+            d.add(f"voltar {provider}", lambda: d.win.get_visible_dialog().pop_subpage(), 0.3)
+    d.add("fecha conta", lambda: d.win.get_visible_dialog().close(), 0.4)
     if ARGS.smoke:
         d.add("preferências", lambda: d.app.activate_action("preferences", None), 0.5)
         d.add("sobre", lambda: d.app.activate_action("about", None), 0.5)

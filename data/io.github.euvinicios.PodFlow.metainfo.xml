@@ -29,6 +29,8 @@
       <li xml:lang="pt-BR">Página Explorar com destaques e prateleiras por gênero</li>
       <li>Up Next queue, continue listening and per-episode progress</li>
       <li xml:lang="pt-BR">Fila A Seguir, Continuar Ouvindo e progresso de cada episódio</li>
+      <li>Optional sync of shows and progress with gpodder.net or Nextcloud</li>
+      <li xml:lang="pt-BR">Sincronização opcional de programas e progresso com gpodder.net ou Nextcloud</li>
       <li>Playback speed from 0.5× to 2.5× without changing the pitch</li>
       <li xml:lang="pt-BR">Velocidade de 0,5× a 2,5× sem alterar o tom da voz</li>
       <li>Sleep timer, offline downloads and listening history</li>
@@ -38,6 +40,12 @@
       <li>Works offline with a pre-installed catalog of Brazilian podcasts</li>
       <li xml:lang="pt-BR">Funciona offline com um catálogo pré-instalado de podcasts brasileiros</li>
     </ul>
+    <p>
+      No ads and no tracking. PodFlow is not affiliated with Apple Inc.
+    </p>
+    <p xml:lang="pt-BR">
+      Sem anúncios e sem rastreamento. O PodFlow não é afiliado à Apple Inc.
+    </p>
   </description>
 
   <launchable type="desktop-id">io.github.euvinicios.PodFlow.desktop</launchable>
@@ -45,9 +53,11 @@
     <binary>podflow</binary>
   </provides>
 
-  <url type="homepage">https://github.com/EuVinicios/Linux-Podcast</url>
+  <url type="homepage">https://euvinicios.github.io/Linux-Podcast/</url>
   <url type="bugtracker">https://github.com/EuVinicios/Linux-Podcast/issues</url>
+  <url type="faq">https://euvinicios.github.io/Linux-Podcast/#perguntas</url>
   <url type="vcs-browser">https://github.com/EuVinicios/Linux-Podcast</url>
+  <url type="contribute">https://github.com/EuVinicios/Linux-Podcast/blob/main/CONTRIBUTING.md</url>
 
   <content_rating type="oars-1.1"/>
 
@@ -60,9 +70,17 @@
     <control>touch</control>
   </supports>
 
+  <keywords>
+    <keyword>podcast</keyword>
+    <keyword>rss</keyword>
+    <keyword>gpodder</keyword>
+    <keyword>nextcloud</keyword>
+    <keyword xml:lang="pt-BR">rankings</keyword>
+  </keywords>
+
   <branding>
-    <color type="primary" scheme_preference="light">#f3c6dd</color>
-    <color type="primary" scheme_preference="dark">#4c1d95</color>
+    <color type="primary" scheme_preference="light">#ead9ff</color>
+    <color type="primary" scheme_preference="dark">#3f1580</color>
   </branding>
 
   <screenshots>
@@ -82,9 +100,24 @@
       <image>https://raw.githubusercontent.com/EuVinicios/Linux-Podcast/main/data/screenshots/listen-now.png</image>
       <caption>Listen Now with the Up Next queue</caption>
     </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/EuVinicios/Linux-Podcast/main/data/screenshots/sync.png</image>
+      <caption>Sync your shows with gpodder.net or Nextcloud</caption>
+    </screenshot>
   </screenshots>
 
   <releases>
+    <release version="0.2.0" date="2026-10-02">
+      <description>
+        <p>Accounts and sync, a new look and a snap for the Ubuntu App Center.</p>
+        <ul>
+          <li>Sync followed shows and episode progress with gpodder.net, Nextcloud or any gPodder-compatible server</li>
+          <li>New purple app icon and accent color (the system accent can be used instead)</li>
+          <li>Passwords are kept in the system keyring</li>
+          <li>Snap package and a project website</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-10-02">
       <description>
         <p>First public release.</p>

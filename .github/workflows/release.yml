@@ -82,7 +82,9 @@ jobs:
 
           ### Instalação
 
-          **Ubuntu 26.04 LTS ou mais recente** (recomendado):
+          **Central de Aplicativos do Ubuntu:** procure por PodFlow ou use `sudo snap install podflow`.
+
+          **Ubuntu 26.04 LTS ou mais recente (.deb):**
 
           ```bash
           sudo apt install ./podflow_*_all.deb

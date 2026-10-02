@@ -9,14 +9,15 @@ from gi.repository import GLib
 
 APP_ID = "io.github.euvinicios.PodFlow"
 APP_NAME = "PodFlow"
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 GETTEXT_DOMAIN = "podflow"
 DEVELOPER = "EuVinicios"
-WEBSITE = "https://github.com/EuVinicios/Linux-Podcast"
-ISSUE_URL = f"{WEBSITE}/issues"
+WEBSITE = "https://euvinicios.github.io/Linux-Podcast/"
+REPOSITORY = "https://github.com/EuVinicios/Linux-Podcast"
+ISSUE_URL = f"{REPOSITORY}/issues"
 COUNTRY = "br"
 MPRIS_BUS_NAME = "org.mpris.MediaPlayer2.podflow"
-USER_AGENT = f"PodFlow/{VERSION} (+{WEBSITE})"
+USER_AGENT = f"PodFlow/{VERSION} (+{REPOSITORY})"
 
 PKG_DIR = Path(__file__).resolve().parent
 

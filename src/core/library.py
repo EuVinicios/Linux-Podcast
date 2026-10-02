@@ -273,6 +273,10 @@ class Library(GObject.Object):
         tasks.run_async(self._add_feed_sync, normalize_feed_url(url),
                         on_done=on_done, on_error=on_error)
 
+    def add_feed_now(self, url: str) -> Podcast:
+        """Blocking :meth:`add_feed` for worker threads (used by sync)."""
+        return self._add_feed_sync(normalize_feed_url(url))
+
     def _add_feed_sync(self, url: str) -> Podcast:
         existing = self.db.find_podcast_by_feed(url)
         if existing is not None:

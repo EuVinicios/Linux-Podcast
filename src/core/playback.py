@@ -56,6 +56,7 @@ class PlaybackManager(GObject.Object):
         self._fade = 1.0
         self._volume_save_source = 0
         self._buffering = False
+        self._play_started = -1.0  # position where the current listening session began
 
         self._volume = float(db.get_setting("volume", 1.0))
         self.player.set_volume(self._volume)
@@ -165,7 +166,7 @@ class PlaybackManager(GObject.Object):
 
     def pause(self) -> None:
         self.player.pause()
-        self._save_progress()
+        self._save_progress(record=True)
 
     def toggle(self) -> None:
         if self.is_playing:
@@ -284,7 +285,8 @@ class PlaybackManager(GObject.Object):
             return Gst.filename_to_uri(episode.download_path)
         return episode.audio_url
 
-    def _save_progress(self, final: bool = False) -> None:
+    def _save_progress(self, final: bool = False, record: bool = False) -> None:
+        """Persist the position; ``record`` (pauses, switches) also queues it for sync."""
         if self.current is None or self._needs_load:
             return
         position = self.player.position
@@ -294,11 +296,16 @@ class PlaybackManager(GObject.Object):
             self.db.set_played(self.current.id, True)
             self.current.played = True
             self.current.position = 0.0
+            self._play_started = -1.0
             return
         if position <= 0 and not final:
             return
         self.current.position = position
         self.db.save_progress(self.current.id, position, duration)
+        if (record or final) and position >= 1 and self._play_started >= 0:
+            self.db.sync_record(self.current.id, "play", self._play_started, position,
+                                duration if duration > 0 else -1)
+            self._play_started = -1.0
 
     def _inhibit(self) -> None:
         if self.app is None or self._inhibit_cookie:
@@ -319,10 +326,12 @@ class PlaybackManager(GObject.Object):
     def _on_state_changed(self, _player, state: int) -> None:
         if state == PlayerState.PLAYING:
             self._inhibit()
+            if self._play_started < 0:
+                self._play_started = max(0.0, self.player.position)
         elif state in (PlayerState.PAUSED, PlayerState.STOPPED):
             self._uninhibit()
             if state == PlayerState.PAUSED:
-                self._save_progress()
+                self._save_progress(record=True)
         self.emit("state-changed", state)
 
     def _on_position_changed(self, _player, position: float, duration: float) -> None:
@@ -343,6 +352,7 @@ class PlaybackManager(GObject.Object):
 
     def _on_eos(self, _player) -> None:
         finished = self.current
+        self._play_started = -1.0
         if finished is not None:
             self.db.set_played(finished.id, True)
             finished.played = True

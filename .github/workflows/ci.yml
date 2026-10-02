@@ -21,7 +21,7 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             ca-certificates git make python3 python3-gi \
             gir1.2-gtk-4.0 gir1.2-adw-1 gir1.2-graphene-1.0 gir1.2-pango-1.0 gir1.2-gdkpixbuf-2.0 \
-            gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 \
+            gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 gir1.2-secret-1 \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
             adwaita-icon-theme librsvg2-common fonts-cantarell \
             xvfb xauth dbus dbus-x11 desktop-file-utils appstream
