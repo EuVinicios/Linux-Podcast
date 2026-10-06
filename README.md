@@ -127,6 +127,7 @@ src/
 └── utils/                    # cache de capas, formatação pt-BR, cores, tarefas em segundo plano
 tests/                        # unittest: parsers, banco, áudio, MPRIS, sync (servidor falso) e interface
 tools/screenshots.py          # percorre as telas e gera capturas (também usado como teste)
+tools/store_assets.py         # monta as imagens da página da Snap Store (data/store/)
 snap/                         # snapcraft.yaml (core26 + extensão GNOME)
 website/                      # site do projeto (GitHub Pages, HTML/CSS sem build)
 build-aux/                    # lançador, empacotamento .deb, manifesto Flatpak e montagem do site
@@ -138,6 +139,7 @@ build-aux/                    # lançador, empacotamento .deb, manifesto Flatpak
 | `make test` | testes (com `xvfb-run` e `dbus-run-session` quando disponíveis) |
 | `make test-live` | testa as APIs da Apple de verdade |
 | `make screenshots` | regenera as capturas em `data/screenshots/` |
+| `make store-assets` | gera as imagens da Snap Store em `data/store/` (envie em snapcraft.io/podflow/listing) |
 | `make deb` | gera `dist/podflow_<versão>_all.deb` |
 | `make flatpak` | compila e instala o Flatpak localmente (requer `flatpak-builder`) |
 | `make snap` | gera o snap (requer `snapcraft` e LXD) |
