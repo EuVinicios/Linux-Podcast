@@ -6,6 +6,7 @@
 #   make deb            build dist/podflow_<version>_all.deb
 #   make flatpak        build and install the Flatpak locally (needs flatpak-builder)
 #   make snap           build the snap (needs snapcraft and LXD)
+#   make store-assets   frame the screenshots for the Snap Store listing
 #   make website        assemble the GitHub Pages site in build/website
 
 APP_ID      := io.github.euvinicios.PodFlow
@@ -20,7 +21,7 @@ VERSION     := $(shell sed -n 's/^VERSION = "\(.*\)"/\1/p' src/config.py)
 HEADLESS := $(shell command -v dbus-run-session >/dev/null 2>&1 && echo "dbus-run-session --") \
             $(shell command -v xvfb-run >/dev/null 2>&1 && echo "xvfb-run -a -s '-screen 0 1600x1000x24'")
 
-.PHONY: all run test test-live smoke screenshots validate install uninstall deb flatpak snap \
+.PHONY: all run test test-live smoke screenshots store-assets validate install uninstall deb flatpak snap \
 	website clean version
 
 all:
@@ -44,6 +45,9 @@ smoke:
 
 screenshots:
 	$(HEADLESS) env GDK_BACKEND=x11 $(PYTHON) tools/screenshots.py --dark --narrow
+
+store-assets:
+	$(PYTHON) -W ignore::DeprecationWarning tools/store_assets.py
 
 validate:
 	desktop-file-validate data/$(APP_ID).desktop
