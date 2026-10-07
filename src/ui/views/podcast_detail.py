@@ -166,7 +166,8 @@ class PodcastDetailPage(ViewPage):
     def on_shown(self) -> None:
         app = self.app
         app.db.mark_podcast_seen(self.podcast_id)
-        started = app.library.refresh_podcast(self.podcast_id, full=True)
+        force = self._total == 0
+        started = app.library.refresh_podcast(self.podcast_id, full=True, force=force)
         self.refresh_stack.set_visible_child_name(
             "spinner" if started or app.library.is_refreshing(self.podcast_id) else "button")
 
