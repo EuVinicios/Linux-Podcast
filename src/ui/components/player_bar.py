@@ -32,7 +32,7 @@ class MarqueeLabel(Gtk.ScrolledWindow):
     def __init__(self, css_classes: tuple[str, ...] = ()):
         super().__init__(hscrollbar_policy=Gtk.PolicyType.EXTERNAL,
                          vscrollbar_policy=Gtk.PolicyType.NEVER, propagate_natural_height=True,
-                         propagate_natural_width=True, can_target=False, hexpand=True)
+                         propagate_natural_width=False, can_target=False, hexpand=True)
         self.label = Gtk.Label(xalign=0, css_classes=list(css_classes), single_line_mode=True)
         self.set_child(self.label)
         self._animation: Adw.TimedAnimation | None = None
@@ -116,7 +116,8 @@ class PlayerBar(Gtk.Box):
         self.subtitle = label("", ("player-subtitle", "dim-label"), ellipsize=True,
                               max_width_chars=24)
         titles.append(self.subtitle)
-        start.append(titles)
+        self.titles_clamp = Adw.Clamp(maximum_size=320, tightening_threshold=260, child=titles)
+        start.append(self.titles_clamp)
         row.set_start_widget(start)
 
         # -- center: transport + progress
@@ -280,6 +281,7 @@ class PlayerBar(Gtk.Box):
         self.volume_button.set_visible(not compact)
         self.overflow_button.set_visible(compact)
         self.back_button.set_visible(not compact)
+        self.titles_clamp.set_maximum_size(180 if compact else 320)
         self.titles.set_size_request(60 if compact else 120, -1)
         self.cover.set_size(40 if compact else 52)
         if compact:

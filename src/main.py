@@ -92,13 +92,18 @@ class PodFlowApplication(Adw.Application):
             from .window import PodFlowWindow
             self.window = PodFlowWindow(self)
             self.playback.restore_session()
-            GLib.timeout_add_seconds(2, self._initial_refresh)
+            GLib.timeout_add_seconds(1, self._initial_refresh)
+            GLib.timeout_add_seconds(1200, self._periodic_refresh)
             self.sync.start()
         self.window.present()
 
     def _initial_refresh(self) -> bool:
-        self.library.refresh_subscriptions()
+        self.library.refresh_subscriptions(force=True)
         return GLib.SOURCE_REMOVE
+
+    def _periodic_refresh(self) -> bool:
+        self.library.refresh_subscriptions(force=False)
+        return GLib.SOURCE_CONTINUE
 
     def do_shutdown(self) -> None:
         try:
@@ -189,6 +194,7 @@ class PodFlowApplication(Adw.Application):
             "app.skip-forward": ["<Control>Right"],
             "app.next": ["<Control>n"],
             "win.search": ["<Control>f"],
+            "win.toggle-sidebar": ["<Control>b", "F9"],
             "win.toggle-queue": ["<Control>u"],
             "win.refresh": ["<Control>r", "F5"],
             "window.close": ["<Control>w"],

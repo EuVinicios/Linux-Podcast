@@ -29,6 +29,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
             self.maximize()
         self._pages: dict[str, Gtk.Widget] = {}
         self._compact = False
+        self._sidebar_icon_only = app.db.get_setting("sidebar_icon_only", False)
         self._current_section = ""
 
         self._build()
@@ -51,6 +52,8 @@ class PodFlowWindow(Adw.ApplicationWindow):
 
         last = app.db.get_setting("last_section", "listen-now")
         self.show_section(last if last in SECTION_NAMES and last != "search" else "listen-now")
+        if self._sidebar_icon_only:
+            self.set_sidebar_icon_only(True)
 
     # -- layout ----------------------------------------------------------------------
 
@@ -64,13 +67,31 @@ class PodFlowWindow(Adw.ApplicationWindow):
 
         self.sidebar = NavigationSidebar(self.show_section)
         sidebar_toolbar = Adw.ToolbarView()
-        sidebar_header = Adw.HeaderBar()
-        sidebar_header.set_title_widget(Adw.WindowTitle(title="PodFlow"))
-        menu_button = Gtk.MenuButton(icon_name="open-menu-symbolic", primary=True,
-                                     tooltip_text=_("Menu principal"))
-        menu_button.set_menu_model(self._primary_menu())
-        sidebar_header.pack_end(menu_button)
-        sidebar_toolbar.add_top_bar(sidebar_header)
+        self.sidebar_header = Adw.HeaderBar()
+        self.sidebar_title = Adw.WindowTitle(title="PodFlow")
+        self.sidebar_header.set_title_widget(self.sidebar_title)
+
+        self.toggle_sidebar_btn = Gtk.Button(icon_name="sidebar-show-symbolic",
+                                             tooltip_text=_("Ocultar menu lateral (Ctrl+B)"),
+                                             css_classes=["flat"],
+                                             action_name="win.toggle-sidebar")
+        self.sidebar_header.pack_start(self.toggle_sidebar_btn)
+
+        self.sidebar_menu_btn = Gtk.MenuButton(icon_name="open-menu-symbolic", primary=True,
+                                               tooltip_text=_("Menu principal"))
+        self.sidebar_menu_btn.set_menu_model(self._primary_menu())
+        self.sidebar_header.pack_end(self.sidebar_menu_btn)
+        sidebar_toolbar.add_top_bar(self.sidebar_header)
+
+        self.sidebar_bottom_menu = Gtk.MenuButton(icon_name="open-menu-symbolic",
+                                                  tooltip_text=_("Menu principal"),
+                                                  css_classes=["flat"],
+                                                  visible=False)
+        self.sidebar_bottom_menu.set_menu_model(self._primary_menu())
+        bottom_box = Gtk.Box(halign=Gtk.Align.CENTER, margin_top=4, margin_bottom=4)
+        bottom_box.append(self.sidebar_bottom_menu)
+        sidebar_toolbar.add_bottom_bar(bottom_box)
+
         sidebar_toolbar.set_content(self.sidebar.widget)
         sidebar_page = Adw.NavigationPage(title="PodFlow", tag="sidebar", child=sidebar_toolbar)
 
@@ -92,7 +113,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
 
         self.player_bar = PlayerBar()
         self.player_revealer = Gtk.Revealer(child=self.player_bar,
-                                            transition_type=Gtk.RevealerTransitionType.SLIDE_UP)
+                                             transition_type=Gtk.RevealerTransitionType.SLIDE_UP)
         outer.add_bottom_bar(self.player_revealer)
 
         self.toast_overlay.set_child(outer)
@@ -104,6 +125,10 @@ class PodFlowWindow(Adw.ApplicationWindow):
         library.append(_("Atualizar biblioteca"), "app.refresh")
         library.append(_("Adicionar feed RSS…"), "app.add-feed")
         menu.append_section(None, library)
+        view = Gio.Menu()
+        view.append(_("Mostrar menu lateral") if self._sidebar_icon_only else _("Ocultar menu lateral"),
+                    "win.toggle-sidebar")
+        menu.append_section(None, view)
         sync = Gio.Menu()
         sync_now = Gio.MenuItem.new(_("Sincronizar agora"), "app.sync")
         sync_now.set_attribute_value("hidden-when", GLib.Variant("s", "action-disabled"))
@@ -121,6 +146,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
         medium = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-width: 860sp"))
         medium.add_setter(self.split, "collapsed", True)
         medium.add_setter(self.queue_split, "collapsed", True)
+        medium.connect("unapply", lambda *_: self._on_breakpoint_unapply())
         narrow = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-width: 600sp"))
         narrow.add_setter(self.split, "collapsed", True)
         narrow.add_setter(self.queue_split, "collapsed", True)
@@ -155,7 +181,41 @@ class PodFlowWindow(Adw.ApplicationWindow):
         add("open-current-podcast", lambda *_: self._open_current_podcast())
         add("search", lambda *_: self._focus_search())
         add("refresh", lambda *_: self._refresh_visible())
+        add("toggle-sidebar", lambda *_: self.toggle_sidebar())
         self.add_action(Gio.PropertyAction.new("toggle-queue", self.queue_split, "show-sidebar"))
+
+    def toggle_sidebar(self) -> None:
+        if self.split.get_collapsed():
+            self.split.set_show_content(not self.split.get_show_content())
+            return
+        self.set_sidebar_icon_only(not self._sidebar_icon_only)
+
+    def set_sidebar_icon_only(self, icon_only: bool) -> None:
+        self._sidebar_icon_only = icon_only
+        self.sidebar.set_collapsed(icon_only)
+        if icon_only:
+            self.split.set_min_sidebar_width(56)
+            self.split.set_max_sidebar_width(56)
+            self.split.set_sidebar_width_fraction(0.0)
+            self.sidebar_title.set_visible(False)
+            self.sidebar_menu_btn.set_visible(False)
+            self.sidebar_bottom_menu.set_visible(True)
+            self.toggle_sidebar_btn.set_tooltip_text(_("Mostrar menu lateral (Ctrl+B)"))
+        else:
+            self.split.set_min_sidebar_width(220)
+            self.split.set_max_sidebar_width(280)
+            self.split.set_sidebar_width_fraction(0.22)
+            self.sidebar_title.set_visible(True)
+            self.sidebar_menu_btn.set_visible(True)
+            self.sidebar_bottom_menu.set_visible(False)
+            self.toggle_sidebar_btn.set_tooltip_text(_("Ocultar menu lateral (Ctrl+B)"))
+        self.sidebar_menu_btn.set_menu_model(self._primary_menu())
+        self.sidebar_bottom_menu.set_menu_model(self._primary_menu())
+        self.app.db.set_setting("sidebar_icon_only", icon_only)
+
+    def _on_breakpoint_unapply(self) -> None:
+        if self._sidebar_icon_only:
+            self.set_sidebar_icon_only(True)
 
     def _on_key_pressed(self, _controller, keyval, _keycode, state) -> bool:
         if keyval != Gdk.KEY_space or state & (Gdk.ModifierType.CONTROL_MASK |

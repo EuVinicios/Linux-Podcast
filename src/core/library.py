@@ -22,8 +22,8 @@ from ..utils import tasks
 
 log = logging.getLogger(__name__)
 
-SUBSCRIPTION_MAX_AGE = 3600
-DETAIL_MAX_AGE = 1800
+SUBSCRIPTION_MAX_AGE = 1800
+DETAIL_MAX_AGE = 300
 
 
 def normalize_feed_url(url: str) -> str:
@@ -91,7 +91,8 @@ class Library(GObject.Object):
         podcast = self.db.get_podcast(podcast_id)
         if podcast is None:
             return False
-        if not force and podcast.last_refreshed and podcast.episode_count:
+        ep_count = self.db.count_episodes(podcast_id)
+        if not force and podcast.last_refreshed and ep_count > 0:
             if time.time() - podcast.last_refreshed < DETAIL_MAX_AGE:
                 return False
         self._refreshing.add(podcast_id)
@@ -128,7 +129,7 @@ class Library(GObject.Object):
                 if not feed_url:
                     raise
                 log.info("Lookup falhou para %s: %s", podcast.title, error)
-        if feed_url and (full or not got_itunes):
+        if feed_url:
             try:
                 parsed = fetch_feed(feed_url, podcast.id)
                 meta = parsed.podcast
