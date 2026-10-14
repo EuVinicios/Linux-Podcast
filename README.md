@@ -71,12 +71,12 @@ sudo snap connect podflow:password-manager-service   # opcional: senha da sincro
 O `.deb` usa o GTK, a Libadwaita e o GStreamer do próprio sistema, por isso é leve (≈ 80 KB) e se
 integra perfeitamente ao Ubuntu.
 
-1. Baixe `podflow_0.2.0_all.deb` na página de
+1. Baixe `podflow_0.3.0_all.deb` na página de
    [**Releases**](https://github.com/EuVinicios/Linux-Podcast/releases/latest).
 2. Instale pelo terminal, na pasta do download:
 
    ```bash
-   sudo apt install ./podflow_0.2.0_all.deb
+   sudo apt install ./podflow_0.3.0_all.deb
    ```
 
 3. Abra **PodFlow** no menu de aplicativos.
@@ -86,9 +86,12 @@ Para remover: `sudo apt remove podflow`.
 
 ### Outras distribuições (Flatpak)
 
+Compile e instale o Flatpak a partir do código-fonte (requer `flatpak-builder`):
+
 ```bash
 flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install --user ./PodFlow.flatpak      # baixado da página de Releases
+git clone https://github.com/EuVinicios/Linux-Podcast.git && cd Linux-Podcast
+make flatpak
 flatpak run io.github.euvinicios.PodFlow
 ```
 
@@ -143,6 +146,8 @@ build-aux/                    # lançador, empacotamento .deb, manifesto Flatpak
 | `make deb` | gera `dist/podflow_<versão>_all.deb` |
 | `make flatpak` | compila e instala o Flatpak localmente (requer `flatpak-builder`) |
 | `make snap` | gera o snap (requer `snapcraft` e LXD) |
+| `make release` | valida, testa e gera o `.deb` e o snap em `dist/` |
+| `make publish` | o mesmo, e envia o snap à Snap Store e cria a release no GitHub |
 | `make website` | monta o site em `build/website/` |
 
 Dados do usuário ficam em `~/.local/share/podflow/` (banco SQLite e downloads) e
@@ -152,15 +157,24 @@ que escolher. Veja a [política de privacidade](https://euvinicios.github.io/Lin
 
 ### Publicando uma versão
 
+As versões são geradas e publicadas a partir desta máquina (os workflows do GitHub Actions
+ficaram só manuais):
+
 1. Atualize `VERSION` em `src/config.py`, o `CHANGELOG.md` e o `<releases>` do metainfo
-   (`make validate` confere).
-2. `git tag v0.2.0 && git push origin v0.2.0`. O GitHub Actions gera o `.deb`, o Flatpak e o
-   `SHA256SUMS` na página de Releases e envia o snap ao canal `candidate` da Snap Store.
+   (`make validate` confere) e leve tudo para a `main`.
+2. `make publish` (ou `tools/release.sh --publish --channel candidate` para testar antes): roda
+   os testes, gera o `.deb` e o snap, envia o snap à Snap Store e cria a release `v<versão>`
+   no GitHub com o `.deb`, o snap e o `SHA256SUMS`.
+3. Para atualizar o PodFlow instalado do código-fonte na sua conta:
+   `make install PREFIX=~/.local`.
+
+O passo a passo da loja (conta, LXD, Snapcraft) está em
+[`docs/publicar-na-central-de-apps.md`](docs/publicar-na-central-de-apps.md).
 
 ### Site
 
 O site fica em `website/` (HTML e CSS puros, sem dependências) e é publicado de graça pelo
-GitHub Pages a cada push na `main` ([workflow](.github/workflows/pages.yml)). Na primeira vez,
+GitHub Pages ([workflow](.github/workflows/pages.yml), hoje disparado manualmente). Na primeira vez,
 ative em **Settings → Pages → Source: GitHub Actions**. Para ver localmente:
 `make website && python3 -m http.server -d build/website`.
 
@@ -206,8 +220,8 @@ speed control and MPRIS integration. The interface is in Brazilian Portuguese.
 Followed shows and episode progress can optionally be synced with gpodder.net, Nextcloud
 (GPodder Sync) or any gPodder-compatible server, so it plays along with AntennaPod and Kasts.
 
-Install it from the Ubuntu App Center (`sudo snap install podflow`), the `.deb` on Ubuntu 26.04+
-(`sudo apt install ./podflow_0.2.0_all.deb`) or the Flatpak bundle on other distributions from the
+Install it from the Ubuntu App Center (`sudo snap install podflow`) or, on Ubuntu 26.04+, with the
+`.deb` (`sudo apt install ./podflow_0.3.0_all.deb`) from the
 [Releases page](https://github.com/EuVinicios/Linux-Podcast/releases/latest).
 Website: <https://euvinicios.github.io/Linux-Podcast/>.
 Licensed under GPL-3.0-or-later. Not affiliated with Apple Inc.

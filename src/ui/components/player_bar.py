@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from gi.repository import Adw, Gio, GLib, GObject, Gtk
+from gi.repository import Adw, Gio, GLib, GObject, Graphene, Gsk, Gtk
 
 from ...core.player import PlayerState
 from ...core.playback import RATES
 from ...i18n import _
-from ...utils.time_format import format_clock, format_remaining, format_speed
+from ...utils.time_format import format_clock, format_date, format_remaining, format_speed
 from ..helpers import get_app, label
 from .cover import CoverImage
+from .marquee import MarqueeLabel
 from .sleep_timer import SleepTimerButton, sleep_menu
 
 
@@ -24,63 +25,90 @@ def _skip_icon(icon_name: str, seconds: str) -> Gtk.Widget:
     return overlay
 
 
-class MarqueeLabel(Gtk.ScrolledWindow):
-    """Single-line label that slowly scrolls back and forth when it overflows."""
+class PlayerRow(Gtk.Widget):
+    """Lays out the bar's three columns: artwork and titles, transport, extra controls.
 
-    __gtype_name__ = "PodFlowMarqueeLabel"
+    Wide, the transport sits truly centred with a fixed share of the width, as in
+    Apple Podcasts, and the two side columns split the rest evenly, so the title
+    gets real room instead of its bare minimum. Compact, artwork and titles take
+    every free pixel and the controls follow them on the right, like a mini player.
+    """
 
-    def __init__(self, css_classes: tuple[str, ...] = ()):
-        super().__init__(hscrollbar_policy=Gtk.PolicyType.EXTERNAL,
-                         vscrollbar_policy=Gtk.PolicyType.NEVER, propagate_natural_height=True,
-                         propagate_natural_width=False, can_target=False, hexpand=True)
-        self.label = Gtk.Label(xalign=0, css_classes=list(css_classes), single_line_mode=True)
-        self.set_child(self.label)
-        self._animation: Adw.TimedAnimation | None = None
-        self._overflow = 0.0
-        self.get_hadjustment().connect("changed", lambda *_: self._check())
-        self.connect("map", lambda *_: self._restart())
-        self.connect("unmap", lambda *_: self._stop())
+    __gtype_name__ = "PodFlowPlayerRow"
 
-    def set_text(self, text: str) -> None:
-        self.label.set_text(text)
-        self._overflow = -1
-        GLib.idle_add(self._restart_once)
+    SPACING = 24
+    COMPACT_SPACING = 8
+    CENTER_SHARE = 0.42
+    CENTER_MAX = 620
 
-    def _restart_once(self) -> bool:
-        self._restart()
-        return GLib.SOURCE_REMOVE
+    def __init__(self, start: Gtk.Widget, center: Gtk.Widget, end: Gtk.Widget):
+        super().__init__(css_classes=["player-row"])
+        self._compact = False
+        self._columns = (start, center, end)
+        for child in self._columns:
+            child.set_parent(self)
 
-    def _check(self) -> None:
-        adjustment = self.get_hadjustment()
-        overflow = adjustment.get_upper() - adjustment.get_page_size()
-        if abs(overflow - self._overflow) > 2:
-            self._restart()
+    def set_compact(self, compact: bool) -> None:
+        if compact != self._compact:
+            self._compact = compact
+            self.queue_resize()
 
-    def _stop(self) -> None:
-        if self._animation is not None:
-            self._animation.reset()
-            self._animation = None
-        self.get_hadjustment().set_value(0)
+    @staticmethod
+    def _width(child: Gtk.Widget, natural: bool = False) -> int:
+        minimum, nat, _min_baseline, _nat_baseline = child.measure(
+            Gtk.Orientation.HORIZONTAL, -1)
+        return nat if natural else minimum
 
-    def _restart(self) -> None:
-        self._stop()
-        adjustment = self.get_hadjustment()
-        self._overflow = adjustment.get_upper() - adjustment.get_page_size()
-        if self._overflow <= 4 or not self.get_mapped():
-            return
-        duration = int(self._overflow / 28 * 1000) + 2000
-        target = Adw.PropertyAnimationTarget.new(adjustment, "value")
-        self._animation = Adw.TimedAnimation.new(self, 0, self._overflow, duration, target)
-        self._animation.set_easing(Adw.Easing.EASE_IN_OUT_SINE)
-        self._animation.set_alternate(True)
-        self._animation.set_repeat_count(0)
-        self._animation.play()
+    def do_measure(self, orientation: Gtk.Orientation, for_size: int):
+        if orientation == Gtk.Orientation.VERTICAL:
+            sizes = [child.measure(orientation, -1)[:2] for child in self._columns]
+            return max(s[0] for s in sizes), max(s[1] for s in sizes), -1, -1
+        start, center, end = (self._width(child) for child in self._columns)
+        minimum = start + center + end + 2 * self._spacing()
+        natural = self._width(self._columns[1], natural=True) + 2 * (max(start, end)
+                                                                    + self._spacing())
+        return minimum, max(minimum, natural), -1, -1
+
+    def _spacing(self) -> int:
+        return self.COMPACT_SPACING if self._compact else self.SPACING
+
+    def do_size_allocate(self, width: int, height: int, baseline: int) -> None:
+        start, center, end = self._columns
+        gap = self._spacing()
+        start_min, center_min, end_min = (self._width(child) for child in self._columns)
+        if self._compact:
+            center_width = self._width(center, natural=True)
+            end_width = self._width(end, natural=True)
+            start_width = max(start_min, width - center_width - end_width - 2 * gap)
+        else:
+            side_min = max(start_min, end_min)
+            center_width = max(center_min, min(width * self.CENTER_SHARE, self.CENTER_MAX))
+            center_width = max(center_min, min(center_width, width - 2 * (side_min + gap)))
+            start_width = end_width = (width - center_width) // 2 - gap
+            if start_width < side_min:  # too narrow to stay centred: the title gets the rest
+                center_width, end_width = center_min, end_min
+                start_width = max(start_min, width - center_min - end_min - 2 * gap)
+        center_width = int(center_width)
+        for child, x, child_width in ((start, 0, start_width),
+                                      (center, start_width + gap, center_width),
+                                      (end, width - end_width, end_width)):
+            child.allocate(int(child_width), height, -1,
+                           Gsk.Transform.new().translate(Graphene.Point().init(x, 0)))
+
+    def do_dispose(self) -> None:
+        for child in self._columns:
+            if child.get_parent() is self:
+                child.unparent()
+        super().do_dispose()
 
 
 class PlayerBar(Gtk.Box):
     __gtype_name__ = "PodFlowPlayerBar"
 
+    # Phone width: mini player with the progress as a thin line on top.
     compact = GObject.Property(type=bool, default=False)
+    # Medium width: speed, sleep timer and volume move into the overflow menu.
+    condensed = GObject.Property(type=bool, default=False)
 
     def __init__(self, queue_toggle_action: str = "win.toggle-queue"):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, css_classes=["player-bar"])
@@ -96,9 +124,6 @@ class PlayerBar(Gtk.Box):
         self.mini_scale.connect("change-value", self._on_change_value)
         self.append(self.mini_scale)
 
-        row = Gtk.CenterBox(css_classes=["player-row"])
-        self.append(row)
-
         # -- start: artwork + titles
         start = Gtk.Box(spacing=12, valign=Gtk.Align.CENTER)
         self.cover_button = Gtk.Button(css_classes=["flat", "player-cover"],
@@ -107,18 +132,21 @@ class PlayerBar(Gtk.Box):
         self.cover = CoverImage(52, radius=8)
         self.cover_button.set_child(self.cover)
         start.append(self.cover_button)
-        titles = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1, hexpand=True,
+        titles = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, hexpand=True,
                          valign=Gtk.Align.CENTER)
-        titles.set_size_request(120, -1)
+        titles.set_size_request(140, -1)
         self.titles = titles
         self.title = MarqueeLabel(("player-title",))
         titles.append(self.title)
-        self.subtitle = label("", ("player-subtitle", "dim-label"), ellipsize=True,
-                              max_width_chars=24)
+        self.subtitle = MarqueeLabel(("player-subtitle", "dim-label"))
         titles.append(self.subtitle)
-        self.titles_clamp = Adw.Clamp(maximum_size=320, tightening_threshold=260, child=titles)
-        start.append(self.titles_clamp)
-        row.set_start_widget(start)
+        # Like the artwork, clicking the titles opens the show.
+        open_show = Gtk.GestureClick()
+        open_show.connect("released", lambda *_: self.activate_action(
+            "win.open-current-podcast", None))
+        titles.add_controller(open_show)
+        titles.set_cursor_from_name("pointer")
+        start.append(titles)
 
         # -- center: transport + progress
         center = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2,
@@ -148,14 +176,13 @@ class PlayerBar(Gtk.Box):
         self.elapsed.set_width_chars(7)
         self.scale = Gtk.Scale(adjustment=self.adjustment, draw_value=False, hexpand=True,
                                css_classes=["player-scale"])
-        self.scale.set_size_request(260, -1)
+        self.scale.set_size_request(200, -1)
         self.scale.connect("change-value", self._on_change_value)
         self.remaining = label("--:--", ("time-label", "numeric", "dim-label"))
         self.remaining.set_width_chars(8)
         for widget in (self.elapsed, self.scale, self.remaining):
             self.progress_row.append(widget)
         center.append(self.progress_row)
-        row.set_center_widget(center)
 
         # -- end: speed, sleep timer, queue, volume
         end = Gtk.Box(spacing=4, valign=Gtk.Align.CENTER, halign=Gtk.Align.END)
@@ -184,9 +211,12 @@ class PlayerBar(Gtk.Box):
         for widget in (self.speed_button, self.sleep_button, self.queue_button,
                        self.volume_button, self.overflow_button):
             end.append(widget)
-        row.set_end_widget(end)
+
+        self.row = PlayerRow(start, center, end)
+        self.append(self.row)
 
         self.connect("notify::compact", lambda *_: self._apply_compact())
+        self.connect("notify::condensed", lambda *_: self._apply_compact())
         pb = self.playback
         pb.connect("episode-changed", lambda _pb, ep: self._on_episode(ep))
         pb.connect("state-changed", lambda *_: self._sync_state())
@@ -211,7 +241,8 @@ class PlayerBar(Gtk.Box):
         if episode is None:
             return
         self.title.set_text(episode.title)
-        self.subtitle.set_text(episode.podcast_title or "")
+        details = (episode.podcast_title, format_date(episode.published))
+        self.subtitle.set_text(" · ".join(part for part in details if part))
         self.cover.set_source(episode.cover_url, episode.podcast_title, episode.podcast_accent)
         self._update_times(self.playback.position, self.playback.duration)
         self._sync_state()
@@ -224,6 +255,9 @@ class PlayerBar(Gtk.Box):
         self.play_icon.set_from_icon_name(
             "media-playback-pause-symbolic" if playing else "media-playback-start-symbolic")
         self.play_button.set_tooltip_text(_("Pausar") if playing else _("Reproduzir"))
+        # Long titles scroll while something plays and rest (hover still scrolls) when paused.
+        self.title.set_running(playing)
+        self.subtitle.set_running(playing)
 
     def _on_position(self, _pb, position: float, duration: float) -> None:
         if self._user_seeking:
@@ -274,15 +308,17 @@ class PlayerBar(Gtk.Box):
 
     def _apply_compact(self) -> None:
         compact = self.compact
+        full = not (compact or self.condensed)
         self.progress_row.set_visible(not compact)
         self.mini_scale.set_visible(compact)
-        self.speed_button.set_visible(not compact)
-        self.sleep_button.set_visible(not compact)
-        self.volume_button.set_visible(not compact)
-        self.overflow_button.set_visible(compact)
+        self.speed_button.set_visible(full)
+        self.sleep_button.set_visible(full)
+        self.volume_button.set_visible(full)
+        self.overflow_button.set_visible(not full)
         self.back_button.set_visible(not compact)
-        self.titles_clamp.set_maximum_size(180 if compact else 320)
-        self.titles.set_size_request(60 if compact else 120, -1)
+        self.row.set_compact(compact)
+        self.scale.set_size_request(200 if full else 120, -1)
+        self.titles.set_size_request(60 if compact else 140 if full else 120, -1)
         self.cover.set_size(40 if compact else 52)
         if compact:
             self.add_css_class("compact")

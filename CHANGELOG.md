@@ -4,6 +4,29 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.3.0] - 2026-10-13
+
+### Alterado
+
+- **Barra de reprodução no estilo do Apple Podcasts**: títulos longos ficam parados no começo,
+  deslizam até uma cópia do texto ocupar o lugar e param de novo, com as bordas esmaecendo em
+  vez de cortar letras no meio. O título rola enquanto o episódio toca e descansa quando está
+  pausado; passar o mouse rola mesmo pausado, e a dica mostra o título inteiro.
+- O título e o programa ganham uma coluna de verdade: os controles ficam centralizados com uma
+  fração fixa da largura e as laterais dividem o resto (antes o título ficava com ~120 px).
+- A segunda linha mostra o programa e a data do episódio (“NerdCast · 25 de set.”), e clicar
+  nos títulos abre o programa, como já acontecia com a capa.
+- Em janelas médias, velocidade, timer de sono e volume vão para o menu ⋯ em vez de serem
+  cortados pela borda; no celular a barra vira um mini player com o título ocupando o espaço livre.
+- Menu lateral recolhível só com ícones (<kbd>Ctrl</kbd>+<kbd>B</kbd> ou <kbd>F9</kbd>), lembrado entre
+  as sessões.
+- Os programas seguidos são atualizados direto pelo feed RSS ao abrir o app e em segundo plano.
+
+### Distribuição
+
+- Versões publicadas daqui mesmo com `tools/release.sh` (testes, `.deb`, snap, Snap Store e
+  release do GitHub); os workflows do GitHub Actions passam a ser só manuais.
+
 ## [0.2.0] - 2026-10-02
 
 ### Adicionado
@@ -48,5 +71,6 @@ Primeira versão pública. 🎉
 - Busca no catálogo da Apple e adição de podcasts por URL de feed RSS.
 - Pacotes `.deb` (Ubuntu 26.04+) e Flatpak (GNOME 50) gerados automaticamente no GitHub Actions.
 
+[0.3.0]: https://github.com/EuVinicios/Linux-Podcast/releases/tag/v0.3.0
 [0.2.0]: https://github.com/EuVinicios/Linux-Podcast/releases/tag/v0.2.0
 [0.1.0]: https://github.com/EuVinicios/Linux-Podcast/releases/tag/v0.1.0

@@ -146,6 +146,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
         medium = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-width: 860sp"))
         medium.add_setter(self.split, "collapsed", True)
         medium.add_setter(self.queue_split, "collapsed", True)
+        medium.add_setter(self.player_bar, "condensed", True)
         medium.connect("unapply", lambda *_: self._on_breakpoint_unapply())
         narrow = Adw.Breakpoint.new(Adw.BreakpointCondition.parse("max-width: 600sp"))
         narrow.add_setter(self.split, "collapsed", True)

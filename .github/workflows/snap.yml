@@ -1,17 +1,8 @@
 name: Snap
 
+# Manual only: there are no GitHub Actions minutes left, so releases are built and
+# published locally with tools/release.sh. Run it from the Actions tab if needed.
 on:
-  push:
-    branches: [main]
-    tags: ["v*"]
-  pull_request:
-    paths:
-      - "snap/**"
-      - "src/**"
-      - "data/**"
-      - "build-aux/**"
-      - "Makefile"
-      - ".github/workflows/snap.yml"
   workflow_dispatch:
 
 permissions:
@@ -108,8 +99,8 @@ jobs:
           path: ${{ steps.build.outputs.snap }}
           if-no-files-found: error
 
-      # main -> edge, tags v* -> candidate. Promote to stable on snapcraft.io
-      # (or with `snapcraft promote`) after testing. Needs the
+      # Only on push events (main -> edge, tags v* -> candidate), which are disabled
+      # above; releases are uploaded with tools/release.sh instead. Needs the
       # SNAPCRAFT_STORE_CREDENTIALS secret: see docs/publicar-na-central-de-apps.md.
       - name: Publicar na Snap Store
         if: github.event_name == 'push' && env.HAS_STORE_CREDENTIALS == 'true'
