@@ -6,6 +6,8 @@
 #   make deb            build dist/podflow_<version>_all.deb
 #   make flatpak        build and install the Flatpak locally (needs flatpak-builder)
 #   make snap           build the snap (needs snapcraft and LXD)
+#   make release        validate, test and build dist/ (.deb + snap) with tools/release.sh
+#   make publish        the same, then upload the snap to the store and create the GitHub release
 #   make store-assets   frame the screenshots for the Snap Store listing
 #   make website        assemble the GitHub Pages site in build/website
 
@@ -22,7 +24,7 @@ HEADLESS := $(shell command -v dbus-run-session >/dev/null 2>&1 && echo "dbus-ru
             $(shell command -v xvfb-run >/dev/null 2>&1 && echo "xvfb-run -a -s '-screen 0 1600x1000x24'")
 
 .PHONY: all run test test-live smoke screenshots store-assets validate install uninstall deb flatpak snap \
-	website clean version
+	release publish website clean version
 
 all:
 	@echo "Nada para compilar: use 'make run', 'make test' ou 'make install'."
@@ -86,6 +88,12 @@ flatpak:
 
 snap:
 	snapcraft pack --output dist/
+
+release:
+	tools/release.sh
+
+publish:
+	tools/release.sh --publish
 
 website:
 	build-aux/website.sh build/website

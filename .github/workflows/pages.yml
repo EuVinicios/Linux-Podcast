@@ -2,15 +2,8 @@ name: Site
 
 # Publishes website/ on GitHub Pages (free for public repositories).
 # One-time setup: Settings → Pages → Build and deployment → Source: GitHub Actions.
+# Manual only for now: there are no GitHub Actions minutes left.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "website/**"
-      - "data/icons/**"
-      - "data/screenshots/**"
-      - "build-aux/website.sh"
-      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:

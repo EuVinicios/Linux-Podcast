@@ -9,9 +9,8 @@ não há metadado no `.deb` que mude isso. Publicado como snap, o PodFlow ganha 
 
 O empacotamento já está pronto em [`snap/snapcraft.yaml`](../snap/snapcraft.yaml): base `core26`
 (Ubuntu 26.04) com a extensão `gnome`, que traz GTK 4.22, Libadwaita, PyGObject, GStreamer e
-Python 3.14 do runtime compartilhado `gnome-core26`. O workflow
-[`.github/workflows/snap.yml`](../.github/workflows/snap.yml) gera o snap para amd64 e arm64 a
-cada push e, com a credencial configurada, publica sozinho.
+Python 3.14 do runtime compartilhado `gnome-core26`. Como não há mais minutos no GitHub Actions,
+o snap é gerado e enviado daqui mesmo com [`tools/release.sh`](../tools/release.sh) (seção 2).
 
 ## 1. Criar a conta de desenvolvedor (uma vez)
 
@@ -21,9 +20,36 @@ cada push e, com a credencial configurada, publica sozinho.
 2. Instale o Snapcraft: `sudo snap install snapcraft --classic`.
 3. Registre o nome: `snapcraft login` e depois `snapcraft register podflow`.
 
-## 2. Conectar o GitHub à loja (uma vez)
+## 2. Publicar daqui (sem GitHub Actions)
 
-Gere uma credencial válida só para este snap:
+Prepare a máquina uma vez (pede a senha do `sudo`):
+
+```bash
+sudo snap install lxd
+sudo lxd init --auto
+sudo usermod -aG lxd "$USER"
+sudo snap refresh snapcraft --channel latest/edge   # 9.2: extensão gnome com core26
+snapcraft login                                      # se `snapcraft whoami` falhar
+```
+
+Depois, a cada versão (com a `main` atualizada no GitHub):
+
+```bash
+make publish                                     # canal stable
+tools/release.sh --publish --channel candidate   # ou teste antes no candidate
+```
+
+O script valida o metainfo, roda os testes, gera o `.deb` e o snap em `dist/`, envia o snap à
+loja e cria a release `v<versão>` no GitHub com o `.deb`, o snap e o `SHA256SUMS`. O snap sai
+para a arquitetura da máquina (amd64); o arm64 fica na versão anterior até ser gerado num
+computador ARM ou com `snapcraft remote-build` (compila de graça no Launchpad).
+
+Para voltar uma versão na loja: `snapcraft release podflow <revisão anterior> stable`
+(as revisões aparecem em `snapcraft revisions podflow`).
+
+### Opcional: publicar pelo GitHub Actions
+
+Se os minutos do Actions voltarem, gere uma credencial válida só para este snap:
 
 ```bash
 snapcraft export-login --snaps=podflow \
@@ -33,21 +59,15 @@ snapcraft export-login --snaps=podflow \
 
 No GitHub, abra **Settings → Secrets and variables → Actions → New repository secret**, crie
 `SNAPCRAFT_STORE_CREDENTIALS` e cole o conteúdo de `credenciais.txt`. Depois apague o arquivo.
-
-A partir daí:
-
-| Evento | Canal da loja |
-|---|---|
-| push na `main` | `edge` (testes) |
-| tag `v*` (ex.: `v0.2.0`) | `candidate` |
+Os workflows estão só com disparo manual; para voltar a publicar a cada push/tag, restaure os
+gatilhos `push` em [`.github/workflows/snap.yml`](../.github/workflows/snap.yml).
 
 Teste o canal `candidate` (`sudo snap install podflow --candidate`) e promova para o público
 em <https://snapcraft.io/podflow/releases> ou com
 `snapcraft promote podflow --from-channel candidate --to-channel stable`.
 
 > **Snapcraft 9.2:** a extensão `gnome` com `core26` entrou no Snapcraft em 1º/10/2026 e chega
-> ao canal estável na versão 9.2. Até lá o workflow usa `latest/edge`. Quando a 9.2 estiver em
-> `latest/stable`, troque `snapcraft-channel` no workflow (ou apague a linha).
+> ao canal estável na versão 9.2. Até lá use `latest/edge` (o workflow já faz isso).
 
 ## 3. Caprichar na página da loja
 

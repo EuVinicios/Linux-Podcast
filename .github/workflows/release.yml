@@ -1,8 +1,8 @@
 name: Release
 
+# Manual only: there are no GitHub Actions minutes left, so releases are built and
+# published locally with tools/release.sh. Run it from the Actions tab if needed.
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
     inputs:
       tag:

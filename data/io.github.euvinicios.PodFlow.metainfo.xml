@@ -107,6 +107,18 @@
   </screenshots>
 
   <releases>
+    <release version="0.3.0" date="2026-10-13">
+      <description>
+        <p>A more polished player bar, inspired by Apple Podcasts.</p>
+        <ul>
+          <li>Long episode titles glide like a marquee with soft faded edges instead of being cut mid-letter</li>
+          <li>The title gets a real column, with the playback controls truly centred</li>
+          <li>The show name and release date appear under the title; clicking them opens the show</li>
+          <li>On medium-sized windows, speed, sleep timer and volume move into the overflow menu</li>
+          <li>The sidebar can collapse to icons only (Ctrl+B or F9)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-10-02">
       <description>
         <p>Accounts and sync, a new look and a snap for the Ubuntu App Center.</p>
