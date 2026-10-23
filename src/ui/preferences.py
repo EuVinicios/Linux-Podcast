@@ -6,7 +6,7 @@ from gi.repository import Adw, Gdk, Gio, Gtk
 
 from ..i18n import _
 from ..utils.time_format import format_size
-from .helpers import get_app
+from .helpers import follow_style_preferences, get_app
 from .sync_page import SyncPage
 
 SCHEMES = (("system", "Seguir o sistema", Adw.ColorScheme.DEFAULT),
@@ -14,8 +14,12 @@ SCHEMES = (("system", "Seguir o sistema", Adw.ColorScheme.DEFAULT),
            ("dark", "Escuro", Adw.ColorScheme.FORCE_DARK))
 
 
-# Same family as the app icon; white text on it passes WCAG AA (4.9:1).
+# Same family as the app icon; white text on it passes WCAG AA (4.9:1). In light mode
+# the accent is Apple Podcasts' own AccentColor (#7224D8, 7.1:1 with white text),
+# read from the app's Assets.car; its dark variant (#9C5AF2) only reaches 4.1:1,
+# so the dark style keeps the brand purple, which is nearly the same hue.
 BRAND_ACCENT = "#9b3fe8"
+BRAND_ACCENT_LIGHT = "#7224d8"
 ACCENTS = (("brand", "Roxo do PodFlow"), ("system", "Cor de destaque do sistema"))
 _accent_provider: Gtk.CssProvider | None = None
 
@@ -27,8 +31,15 @@ def apply_accent(value: str) -> None:
     if display is None:
         return
     if _accent_provider is None:
-        _accent_provider = Gtk.CssProvider()
-        _accent_provider.load_from_string(f":root {{ --accent-bg-color: {BRAND_ACCENT}; }}")
+        _accent_provider = follow_style_preferences(Gtk.CssProvider())
+        # Ubuntu's Yaru-patched Libadwaita pins --accent-color to the system accent,
+        # so derive it from the background again, as stock Adwaita does.
+        _accent_provider.load_from_string(
+            f":root {{ --accent-bg-color: {BRAND_ACCENT_LIGHT}; --accent-color: oklab(from "
+            "var(--accent-bg-color) var(--standalone-color-oklab)); }\n"
+            "@media (prefers-color-scheme: dark) {\n"
+            f"  :root {{ --accent-bg-color: {BRAND_ACCENT}; }}\n"
+            "}\n")
     Gtk.StyleContext.remove_provider_for_display(display, _accent_provider)
     if value != "system":
         Gtk.StyleContext.add_provider_for_display(display, _accent_provider,

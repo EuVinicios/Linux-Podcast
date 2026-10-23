@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 
-from gi.repository import Adw, Gio, GLib, Gtk, Pango
+from gi.repository import Adw, Gio, GLib, GObject, Gtk, Pango
 
 from ..i18n import _
 from ..models import Episode
@@ -13,6 +13,22 @@ from ..models import Episode
 def get_app():
     """The running PodFlowApplication (services live on it)."""
     return Gio.Application.get_default()
+
+
+def follow_style_preferences(provider: Gtk.CssProvider) -> Gtk.CssProvider:
+    """Make ``@media (prefers-color-scheme/-contrast)`` in an app stylesheet track the style.
+
+    Since GTK 4.20 each provider evaluates those queries against its own properties,
+    and only Libadwaita's providers follow the StyleManager by themselves.
+    """
+    settings = Gtk.Settings.get_default()
+    if settings is None:
+        return provider
+    for source, target in (("gtk-interface-color-scheme", "prefers-color-scheme"),
+                           ("gtk-interface-contrast", "prefers-contrast")):
+        if settings.find_property(source) and provider.find_property(target):
+            settings.bind_property(source, provider, target, GObject.BindingFlags.SYNC_CREATE)
+    return provider
 
 
 def label(text: str = "", css: Iterable[str] = (), xalign: float = 0.0, wrap: bool = False,
@@ -61,11 +77,29 @@ def scrolled_page(content: Gtk.Widget, maximum: int = 1400) -> Gtk.ScrolledWindo
                               vexpand=True)
 
 
-def section_header(title: str, subtitle: str | None = None) -> Gtk.Box:
+def section_header(title: str, subtitle: str | None = None,
+                   on_activate: Callable[[], None] | None = None,
+                   action_name: str | None = None) -> Gtk.Box:
+    """Shelf title. With a destination it becomes "Title ›", like Apple's shelf headers."""
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-    box.append(label(title, ("shelf-title",)))
+    title_label = label(title, ("shelf-title",), ellipsize=True)
+    if on_activate is None and action_name is None:
+        box.append(title_label)
+    else:
+        content = Gtk.Box(spacing=4)
+        content.append(title_label)
+        content.append(Gtk.Image(icon_name="go-next-symbolic", pixel_size=16,
+                                 css_classes=["shelf-chevron"], valign=Gtk.Align.CENTER))
+        button = Gtk.Button(child=content, css_classes=["flat", "shelf-title-button"],
+                            halign=Gtk.Align.START, tooltip_text=_("Ver tudo"))
+        if action_name is not None:
+            button.set_action_name(action_name)
+        if on_activate is not None:
+            button.connect("clicked", lambda *_: on_activate())
+        box.append(button)
+    box.title_label = title_label
     if subtitle:
-        box.append(label(subtitle, ("shelf-subtitle", "dim-label")))
+        box.append(label(subtitle, ("shelf-subtitle", "dim-label"), ellipsize=True))
     return box
 
 

@@ -26,7 +26,7 @@ class ExploreView(ViewPage):
     __gtype_name__ = "PodFlowExploreView"
 
     def __init__(self):
-        super().__init__(_("Explorar"), "explore")
+        super().__init__(_("Novidades"), "explore")
         refresh = Gtk.Button(icon_name="view-refresh-symbolic", tooltip_text=_("Atualizar"))
         refresh.connect("clicked", lambda *_: self.refresh(force=True))
         self.header.pack_end(refresh)
@@ -48,7 +48,8 @@ class ExploreView(ViewPage):
 
         self.genre_shelves: dict[int, Shelf] = {}
         for genre_id in genres.FEATURED_GENRES:
-            shelf = Shelf(genres.genre_name(genre_id))
+            shelf = Shelf(genres.genre_name(genre_id),
+                          on_see_all=lambda gid=genre_id: self._open_charts(gid))
             self.genre_shelves[genre_id] = shelf
             self.content.append(shelf)
 
@@ -56,8 +57,8 @@ class ExploreView(ViewPage):
         self._loaded_at = 0.0
         self.app.library.connect("online-changed", lambda _l, online: online and self.refresh())
 
-    def _open_charts(self) -> None:
-        self.activate_action("win.show-section", GLib.Variant("s", "charts"))
+    def _open_charts(self, genre_id: int = 0) -> None:
+        self.activate_action("win.show-chart-genre", GLib.Variant("i", genre_id))
 
     def set_compact(self, compact: bool) -> None:
         changed = compact != self.compact

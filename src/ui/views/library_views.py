@@ -1,4 +1,4 @@
-"""Biblioteca: followed shows, saved episodes, downloads and history."""
+"""Biblioteca: followed shows, saved episodes, downloads, latest episodes and history."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ class FollowingView(ViewPage):
     __gtype_name__ = "PodFlowFollowingView"
 
     def __init__(self):
-        super().__init__(_("Programas Seguidos"), "following")
+        super().__init__(_("Podcasts"), "following")
         self._order = self.app.db.get_setting("following_order", "recent")
         sort = Gtk.MenuButton(icon_name="view-sort-descending-symbolic",
                               tooltip_text=_("Ordenar"))
@@ -120,7 +120,7 @@ class SavedView(EpisodeListView):
     __gtype_name__ = "PodFlowSavedView"
 
     def __init__(self, app):
-        super().__init__(_("Episódios Salvos"), "saved", app.db.list_saved, "starred-symbolic",
+        super().__init__(_("Salvos"), "saved", app.db.list_saved, "starred-symbolic",
                          _("Nenhum episódio salvo"),
                          _("Use “Salvar episódio” no menu de um episódio para guardá-lo aqui."),
                          ("episode-changed",))
@@ -161,11 +161,24 @@ class DownloadsView(EpisodeListView):
         dialog.present(self.get_root())
 
 
+class LatestEpisodesView(EpisodeListView):
+    """Newest episodes of the followed shows, like Apple's "Últimos Episódios"."""
+
+    __gtype_name__ = "PodFlowLatestEpisodesView"
+
+    def __init__(self, app):
+        super().__init__(_("Últimos Episódios"), "latest", app.db.list_latest_episodes,
+                         "view-list-symbolic", _("Nenhum episódio recente"),
+                         _("Os episódios mais recentes dos podcasts que você segue aparecerão "
+                           "aqui."),
+                         ("episodes-changed", "subscriptions-changed"))
+
+
 class HistoryView(EpisodeListView):
     __gtype_name__ = "PodFlowHistoryView"
 
     def __init__(self, app):
-        super().__init__(_("Histórico"), "history", app.db.list_history,
+        super().__init__(_("Reproduções Recentes"), "history", app.db.list_history,
                          "document-open-recent-symbolic", _("Nada ouvido ainda"),
                          _("Os episódios que você ouvir aparecem aqui."),
                          ("history-changed",))

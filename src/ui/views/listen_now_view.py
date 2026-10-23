@@ -1,4 +1,4 @@
-"""Ouvir Agora: continue listening, Up Next and new episodes from followed shows."""
+"""Início (Ouvir Agora): continue listening, Up Next and new episodes from followed shows."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ class ListenNowView(ViewPage):
     __gtype_name__ = "PodFlowListenNowView"
 
     def __init__(self):
-        super().__init__(_("Ouvir Agora"), "listen-now")
+        super().__init__(_("Início"), "listen-now")
         self.refresh_stack = Gtk.Stack()
         refresh = Gtk.Button(icon_name="view-refresh-symbolic", action_name="app.refresh",
                              tooltip_text=_("Atualizar programas seguidos"))
@@ -58,15 +58,10 @@ class ListenNowView(ViewPage):
         queue = [e for e in queue if current is None or e.id != current.id]
         if queue:
             section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-            head = Gtk.Box()
-            head.append(section_header(_("A Seguir"),
-                                       _("{count} episódios na fila").format(count=len(queue))
-                                       if len(queue) != 1 else _("1 episódio na fila")))
-            head.get_first_child().set_hexpand(True)
-            see_all = Gtk.Button(label=_("Ver tudo"), css_classes=["flat", "see-all"],
-                                 action_name="win.toggle-queue", valign=Gtk.Align.END)
-            head.append(see_all)
-            section.append(head)
+            section.append(section_header(_("A Seguir"),
+                                          _("{count} episódios na fila").format(count=len(queue))
+                                          if len(queue) != 1 else _("1 episódio na fila"),
+                                          action_name="win.toggle-queue"))
             listbox = self._episode_list()
             for episode in queue[:4]:
                 listbox.append(EpisodeRow(episode, show_cover=True, show_podcast=True,

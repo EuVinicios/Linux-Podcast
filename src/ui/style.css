@@ -29,9 +29,44 @@ window.compact .page-content {
   padding: 2px 10px;
 }
 
+/* "Title ›": the shelf title is the "see all" button, as in Apple Podcasts. */
+.shelf-title-button {
+  padding: 0 6px;
+  margin-left: -6px;
+  min-height: 0;
+}
+
+.shelf-title-button:hover {
+  background: none;
+}
+
+.shelf-title-button:hover .shelf-chevron,
+.shelf-title-button:hover .shelf-title {
+  opacity: 0.75;
+}
+
+.shelf-chevron {
+  opacity: 0.55;
+  margin-top: 2px;
+}
+
+/* Paging arrows float over the row edges and fade in on hover. */
 .shelf-arrow {
-  min-width: 30px;
-  min-height: 30px;
+  min-width: 34px;
+  min-height: 34px;
+  color: var(--window-fg-color);
+  background-color: color-mix(in srgb, var(--window-bg-color) 88%, transparent);
+  box-shadow: 0 1px 3px alpha(black, 0.2), 0 4px 12px alpha(black, 0.16);
+  opacity: 0;
+  transition: opacity 200ms ease, background-color 160ms ease;
+}
+
+.shelf.hover .shelf-arrow {
+  opacity: 1;
+}
+
+.shelf-arrow:hover {
+  background-color: var(--window-bg-color);
 }
 
 /* ---------- Artwork ---------- */
@@ -143,7 +178,7 @@ window.compact .page-content {
 /* ---------- Episode rows ---------- */
 
 .episode-list > row.episode-row {
-  padding: 12px 12px 12px 16px;
+  padding: 12px 10px 10px 16px;
 }
 
 .episode-eyebrow {
@@ -176,15 +211,56 @@ progressbar.episode-progress > trough > progress {
   border-radius: 4px;
 }
 
-.play-ring {
-  min-width: 42px;
-  min-height: 42px;
-  padding: 0;
-  color: var(--accent-color);
+/* Apple-style lockup controls: capsule play button + ⋯ on the same line. */
+.episode-controls {
+  margin-top: 6px;
 }
 
-.play-ring.playing {
-  background-color: color-mix(in srgb, var(--accent-bg-color) 14%, transparent);
+.episode-play {
+  min-height: 26px;
+  padding: 2px 11px 2px 9px;
+  border-radius: 999px;
+  font-size: 0.86em;
+  font-weight: 700;
+  color: var(--accent-color);
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.episode-play:hover {
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.episode-play:active {
+  background-color: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.episode-play.current {
+  color: var(--accent-fg-color);
+  background-color: var(--accent-bg-color);
+}
+
+.episode-play.current:hover {
+  filter: brightness(1.08);
+}
+
+progressbar.episode-play-progress > trough,
+progressbar.episode-play-progress > trough > progress {
+  min-height: 3px;
+  border-radius: 3px;
+}
+
+progressbar.episode-play-progress > trough {
+  background-color: color-mix(in srgb, currentColor 28%, transparent);
+}
+
+progressbar.episode-play-progress > trough > progress {
+  background-color: currentColor;
+}
+
+.episode-more {
+  min-width: 28px;
+  min-height: 28px;
+  color: var(--accent-color);
 }
 
 /* ---------- Rankings ---------- */
@@ -531,6 +607,24 @@ scale.mini-progress > trough > slider {
 .sidebar-icon-only list.navigation-sidebar > row {
   padding: 4px 0;
   min-height: 38px;
+}
+
+/* Account at the foot of the sidebar (Apple's SidebarProfileButton). */
+.sidebar-footer {
+  padding: 6px;
+}
+
+.sidebar-account {
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+.sidebar-account-name {
+  font-weight: 700;
+}
+
+.sidebar-account-caption {
+  font-size: 0.82em;
 }
 
 /* ---------- Sync ---------- */
