@@ -36,17 +36,17 @@ version:
 	@echo $(VERSION)
 
 test:
-	$(HEADLESS) env GDK_BACKEND=x11 GSK_RENDERER=cairo $(PYTHON) -W ignore::DeprecationWarning \
+	$(HEADLESS) env GDK_BACKEND=x11 GSK_RENDERER=cairo GTK_A11Y=none $(PYTHON) -W ignore::DeprecationWarning \
 		-m unittest discover -s tests -t . -v
 
 test-live:
 	PODFLOW_LIVE_TESTS=1 PODFLOW_OFFLINE=0 $(PYTHON) -m unittest tests.test_apple_service -v
 
 smoke:
-	$(HEADLESS) env GDK_BACKEND=x11 $(PYTHON) tools/screenshots.py --smoke
+	$(HEADLESS) env GDK_BACKEND=x11 GTK_A11Y=none $(PYTHON) tools/screenshots.py --smoke
 
 screenshots:
-	$(HEADLESS) env GDK_BACKEND=x11 $(PYTHON) tools/screenshots.py --dark --narrow
+	$(HEADLESS) env GDK_BACKEND=x11 GTK_A11Y=none $(PYTHON) tools/screenshots.py --dark --narrow
 
 store-assets:
 	$(PYTHON) -W ignore::DeprecationWarning tools/store_assets.py
