@@ -1,4 +1,4 @@
-"""Rankings (/br/charts): Top Podcasts and Top Episódios with a category filter."""
+"""Top Charts (/br/charts): Top Podcasts and Top Episódios with a category filter."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ class ChartsView(ViewPage):
     __gtype_name__ = "PodFlowChartsView"
 
     def __init__(self):
-        super().__init__(_("Rankings"), "charts")
+        super().__init__(_("Top Charts"), "charts")
         self.stack = Adw.ViewStack(vexpand=True)
         self.switcher = Adw.ViewSwitcher(stack=self.stack, policy=Adw.ViewSwitcherPolicy.WIDE)
         self.header.set_title_widget(self.switcher)
@@ -63,6 +63,12 @@ class ChartsView(ViewPage):
             self.header.set_title_widget(None)
         else:
             self.header.set_title_widget(self.switcher)
+
+    def select_genre(self, genre_id: int) -> None:
+        """Show the Top Podcasts of one category (0 for all of them)."""
+        self.stack.set_visible_child_name("podcasts")
+        if genre_id in self._genre_ids:
+            self.dropdown.set_selected(self._genre_ids.index(genre_id))
 
     @property
     def genre_id(self) -> int:

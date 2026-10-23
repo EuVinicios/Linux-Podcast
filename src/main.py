@@ -19,6 +19,7 @@ from .core.playback import PlaybackManager
 from .core.player import AudioPlayer
 from .core.sync import SyncManager
 from .i18n import _
+from .ui.helpers import follow_style_preferences
 from .ui.preferences import PreferencesDialog, apply_accent, apply_color_scheme
 from .utils import tasks
 from .utils.cache import ImageCache
@@ -127,7 +128,7 @@ class PodFlowApplication(Adw.Application):
         display = Gdk.Display.get_default()
         if display is None:
             return
-        provider = Gtk.CssProvider()
+        provider = follow_style_preferences(Gtk.CssProvider())
         provider.load_from_path(str(config.PKG_DIR / "ui" / "style.css"))
         Gtk.StyleContext.add_provider_for_display(display, provider,
                                                   Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)

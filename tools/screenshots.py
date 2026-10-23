@@ -166,7 +166,7 @@ def start(app: PodFlowApplication) -> None:
     d.add("fecha fila", lambda: d.win.queue_split.set_show_sidebar(False), 0.3)
     d.add("seguidos", lambda: d.section("following"), wait * 0.8)
     d.add("captura biblioteca", lambda: d.shot("library"), 0.3)
-    for name in ("saved", "downloads", "history", "search"):
+    for name in ("saved", "downloads", "latest", "history", "search"):
         d.add(name, lambda n=name: d.section(n), min(wait, 1.0))
     d.add("explorar para conta", lambda: d.section("explore"), wait * 0.6)
     d.add("conta", lambda: d.app.activate_action("account", None), wait * 0.4)

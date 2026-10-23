@@ -1,10 +1,15 @@
-"""Episode list row with a circular play button that shows progress."""
+"""Episode list row laid out like an Apple Podcasts episode lockup.
+
+Date eyebrow, title and summary, then a row of state controls: a capsule play
+button that carries the duration or the time left (with a small progress bar),
+an animated waveform while the episode plays, status glyphs and the ⋯ menu.
+"""
 
 from __future__ import annotations
 
 import math
 
-from gi.repository import Gdk, GLib, Graphene, Gsk, Gtk
+from gi.repository import GLib, Graphene, Gsk, Gtk
 
 from ...core.player import PlayerState
 from ...i18n import _
@@ -15,74 +20,113 @@ from ..helpers import episode_menu, get_app, label
 from .cover import CoverImage
 
 
-class _RingBox(Gtk.Box):
-    """Draws a progress ring around its child icon."""
+class WaveformIndicator(Gtk.Widget):
+    """Four bars that bounce while the episode plays (Apple's WaveformIndicatorView)."""
 
-    __gtype_name__ = "PodFlowRingBox"
+    __gtype_name__ = "PodFlowWaveformIndicator"
+
+    BARS = 4
+    BAR_WIDTH = 2.0
+    # Resting heights, and per-bar speed and phase of the animation.
+    REST = (0.45, 0.8, 0.6, 0.9)
+    SPEED = (5.3, 6.7, 4.6, 5.9)
+    PHASE = (0.0, 1.7, 0.9, 2.6)
 
     def __init__(self):
-        super().__init__(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
-        self.fraction = 0.0
-        self.icon = Gtk.Image(icon_name="media-playback-start-symbolic", pixel_size=16,
-                              halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=True,
-                              vexpand=True)
-        self.append(self.icon)
-        self.set_size_request(36, 36)
-        # Keep the icon's expand flags from propagating up to the row layout.
-        self.set_hexpand(False)
-        self.set_vexpand(False)
+        super().__init__(css_classes=["waveform"], valign=Gtk.Align.CENTER)
+        self._tick = 0
+
+    def do_measure(self, orientation: Gtk.Orientation, _for_size: int):
+        size = 13 if orientation == Gtk.Orientation.HORIZONTAL else 12
+        return size, size, -1, -1
+
+    def set_running(self, running: bool) -> None:
+        if running and not self._tick:
+            self._tick = self.add_tick_callback(lambda *_: self.queue_draw() or True)
+        elif not running and self._tick:
+            self.remove_tick_callback(self._tick)
+            self._tick = 0
+        self.queue_draw()
 
     def do_snapshot(self, snapshot: Gtk.Snapshot) -> None:
         width, height = self.get_width(), self.get_height()
         color = self.get_color()
-        radius = min(width, height) / 2 - 1.5
-        cx, cy = width / 2, height / 2
-        track = Gdk.RGBA()
-        track.red, track.green, track.blue, track.alpha = color.red, color.green, color.blue, 0.18
-        builder = Gsk.PathBuilder.new()
-        builder.add_circle(Graphene.Point().init(cx, cy), radius)
-        snapshot.append_stroke(builder.to_path(), Gsk.Stroke.new(2.0), track)
-        if 0.005 < self.fraction:
-            fraction = min(self.fraction, 0.9999)
-            angle = -math.pi / 2 + 2 * math.pi * fraction
-            arc = Gsk.PathBuilder.new()
-            arc.move_to(cx, cy - radius)
-            arc.svg_arc_to(radius, radius, 0, fraction > 0.5, True,
-                           cx + radius * math.cos(angle), cy + radius * math.sin(angle))
-            stroke = Gsk.Stroke.new(2.5)
-            stroke.set_line_cap(Gsk.LineCap.ROUND)
-            snapshot.append_stroke(arc.to_path(), stroke, color)
-        Gtk.Box.do_snapshot(self, snapshot)
+        clock = self.get_frame_clock() if self._tick else None
+        seconds = clock.get_frame_time() / 1_000_000 if clock is not None else None
+        gap = (width - self.BARS * self.BAR_WIDTH) / (self.BARS - 1)
+        for index in range(self.BARS):
+            if seconds is None:
+                level = self.REST[index]
+            else:
+                wave = math.sin(seconds * self.SPEED[index] + self.PHASE[index])
+                level = 0.3 + 0.7 * (0.5 + 0.5 * wave)
+            bar = max(self.BAR_WIDTH, height * level)
+            rect = Graphene.Rect().init(index * (self.BAR_WIDTH + gap), (height - bar) / 2,
+                                        self.BAR_WIDTH, bar)
+            rounded = Gsk.RoundedRect()
+            rounded.init_from_rect(rect, self.BAR_WIDTH / 2)
+            snapshot.push_rounded_clip(rounded)
+            snapshot.append_color(color, rect)
+            snapshot.pop()
 
 
-class PlayButton(Gtk.Button):
-    __gtype_name__ = "PodFlowPlayButton"
+class PlayPill(Gtk.Button):
+    """Capsule play button: ▶ 1h 3min, ▶ ▬▬── Faltam 25 min, or the waveform while playing."""
+
+    __gtype_name__ = "PodFlowPlayPill"
 
     def __init__(self):
-        super().__init__(css_classes=["flat", "circular", "play-ring"],
-                         valign=Gtk.Align.CENTER, tooltip_text=_("Reproduzir"))
-        self.ring = _RingBox()
-        self.set_child(self.ring)
-        self.set_hexpand(False)
-        self._playing = False
+        super().__init__(css_classes=["episode-play"], valign=Gtk.Align.CENTER,
+                         halign=Gtk.Align.START, tooltip_text=_("Reproduzir"))
+        box = Gtk.Box(spacing=6)
+        self.glyph = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE,
+                               valign=Gtk.Align.CENTER)
+        self.icon = Gtk.Image(icon_name="media-playback-start-symbolic", pixel_size=12)
+        self.waveform = WaveformIndicator()
+        self.glyph.add_named(self.icon, "icon")
+        self.glyph.add_named(self.waveform, "waveform")
+        box.append(self.glyph)
+        self.bar = Gtk.ProgressBar(css_classes=["episode-play-progress"], valign=Gtk.Align.CENTER)
+        self.bar.set_size_request(30, -1)
+        box.append(self.bar)
+        self.text = Gtk.Label(css_classes=["numeric"])
+        box.append(self.text)
+        self.set_child(box)
 
-    def update(self, fraction: float, playing: bool) -> None:
-        if abs(fraction - self.ring.fraction) > 0.001:
-            self.ring.fraction = fraction
-            self.ring.queue_draw()
-        if playing != self._playing:
-            self._playing = playing
-            self.ring.icon.set_from_icon_name(
-                "media-playback-pause-symbolic" if playing else "media-playback-start-symbolic")
-            self.set_tooltip_text(_("Pausar") if playing else _("Reproduzir"))
-            if playing:
-                self.add_css_class("playing")
-            else:
-                self.remove_css_class("playing")
+    def update(self, episode: Episode, current: bool, playing: bool,
+               position: float | None = None) -> None:
+        position = episode.position if position is None else position
+        duration = episode.duration
+        started = current or (episode.in_progress and duration > 0)
+        if playing:
+            text = format_time_left(position, duration) or _("Reproduzindo")
+        elif episode.played and not current:
+            text = _("Reproduzido")
+        elif started and duration > 0:
+            text = format_time_left(position, duration)
+        else:
+            text = format_duration(duration) or _("Reproduzir")
+        if self.text.get_text() != text:
+            self.text.set_text(text)
+        show_bar = started and duration > 0 and not (episode.played and not current)
+        self.bar.set_visible(show_bar)
+        if show_bar:
+            self.bar.set_fraction(max(0.0, min(1.0, position / duration)))
+        icon = ("media-playlist-repeat-symbolic" if episode.played and not current
+                else "media-playback-pause-symbolic" if current and playing
+                else "media-playback-start-symbolic")
+        self.icon.set_from_icon_name(icon)
+        self.glyph.set_visible_child_name("waveform" if playing else "icon")
+        self.waveform.set_running(playing)
+        self.set_tooltip_text(_("Pausar") if playing else _("Reproduzir"))
+        if current:
+            self.add_css_class("current")
+        else:
+            self.remove_css_class("current")
 
 
 class EpisodeRow(Gtk.ListBoxRow):
-    """Date eyebrow, title, summary, meta line; click to expand the notes."""
+    """Date eyebrow, title, summary and state controls; click to expand the notes."""
 
     __gtype_name__ = "PodFlowEpisodeRow"
 
@@ -117,32 +161,29 @@ class EpisodeRow(Gtk.ListBoxRow):
         self.notes.set_visible(False)
         body.append(self.notes)
 
-        meta = Gtk.Box(spacing=8, margin_top=4)
-        self.progress = Gtk.ProgressBar(css_classes=["episode-progress"], valign=Gtk.Align.CENTER)
-        self.progress.set_size_request(64, -1)
-        meta.append(self.progress)
+        controls = Gtk.Box(spacing=10, css_classes=["episode-controls"])
+        self.play = PlayPill()
+        self.play.connect("clicked", self._on_play_clicked)
+        controls.append(self.play)
         self.meta = label("", ("caption", "dim-label", "numeric"), ellipsize=True,
                           max_width_chars=10)
-        meta.append(self.meta)
+        controls.append(self.meta)
         self.download_icon = Gtk.Image(icon_name="folder-download-symbolic", pixel_size=12,
                                        css_classes=["dim-label"],
                                        tooltip_text=_("Disponível offline"))
-        meta.append(self.download_icon)
+        controls.append(self.download_icon)
         self.saved_icon = Gtk.Image(icon_name="starred-symbolic", pixel_size=12,
                                     css_classes=["accent"], tooltip_text=_("Salvo"))
-        meta.append(self.saved_icon)
-        body.append(meta)
-        outer.append(body)
-
-        self.play = PlayButton()
-        self.play.connect("clicked", self._on_play_clicked)
-        outer.append(self.play)
-
-        self.menu_button = Gtk.MenuButton(icon_name="view-more-symbolic", valign=Gtk.Align.CENTER,
-                                          css_classes=["flat", "circular"],
+        controls.append(self.saved_icon)
+        controls.append(Gtk.Box(hexpand=True))
+        self.menu_button = Gtk.MenuButton(icon_name="view-more-horizontal-symbolic",
+                                          valign=Gtk.Align.CENTER,
+                                          css_classes=["flat", "circular", "episode-more"],
                                           tooltip_text=_("Mais opções"))
         self.menu_button.set_create_popup_func(self._build_menu)
-        outer.append(self.menu_button)
+        controls.append(self.menu_button)
+        body.append(controls)
+        outer.append(body)
         self.set_child(outer)
         self._refresh()
 
@@ -157,6 +198,7 @@ class EpisodeRow(Gtk.ListBoxRow):
             (app.db, app.db.connect("episode-changed", self._on_episode_changed)),
             (app.playback, app.playback.connect("episode-changed", lambda *_: self._refresh_play())),
             (app.playback, app.playback.connect("state-changed", lambda *_: self._refresh_play())),
+            (app.playback, app.playback.connect("position-changed", self._on_position)),
             (app.downloads, app.downloads.connect("progress", self._on_download_progress)),
         ]
         self._refresh()
@@ -165,6 +207,7 @@ class EpisodeRow(Gtk.ListBoxRow):
         for obj, handler in self._handlers:
             obj.disconnect(handler)
         self._handlers = []
+        self.play.waveform.set_running(False)
         Gtk.ListBoxRow.do_unroot(self)
 
     # -- state -----------------------------------------------------------------------
@@ -181,6 +224,12 @@ class EpisodeRow(Gtk.ListBoxRow):
         if episode_id == self.episode.id:
             self.meta.set_text(_("Baixando… {percent}%").format(percent=int(fraction * 100)))
 
+    def _on_position(self, playback, position: float, _duration: float) -> None:
+        current = playback.current
+        if current is not None and current.id == self.episode.id:
+            _current, playing = self._is_current()
+            self.play.update(self.episode, True, playing, position)
+
     def _is_current(self) -> tuple[bool, bool]:
         app = get_app()
         if app is None or app.playback.current is None:
@@ -190,9 +239,9 @@ class EpisodeRow(Gtk.ListBoxRow):
                                                             PlayerState.LOADING)
 
     def _refresh_play(self) -> None:
-        _current, playing = self._is_current()
-        fraction = 1.0 if self.episode.played else self.episode.progress
-        self.play.update(fraction, playing)
+        current, playing = self._is_current()
+        position = get_app().playback.position if current else None
+        self.play.update(self.episode, current, playing, position)
 
     def _refresh(self) -> None:
         episode = self.episode
@@ -207,31 +256,23 @@ class EpisodeRow(Gtk.ListBoxRow):
         else:
             self.title.remove_css_class("played")
 
-        in_progress = episode.in_progress and episode.duration > 0
-        self.progress.set_visible(in_progress)
-        if in_progress:
-            self.progress.set_fraction(episode.progress)
-
         app = get_app()
         downloading = app is not None and app.downloads.is_active(episode.id)
         if downloading:
             percent = int((app.downloads.progress(episode.id) or 0) * 100)
             meta = _("Baixando… {percent}%").format(percent=percent)
-        elif episode.played:
-            meta = _("Reproduzido")
-        elif in_progress:
-            meta = format_time_left(episode.position, episode.duration)
-        else:
-            meta = format_duration(episode.duration)
-        if episode.download_state == "failed" and not downloading:
+        elif episode.download_state == "failed":
             meta = _("Falha no download")
-        if episode.is_downloaded and episode.download_size:
-            meta = f"{meta} · {format_size(episode.download_size)}" if meta else format_size(
-                episode.download_size)
+        elif episode.is_downloaded:
+            meta = format_size(episode.download_size)
+        else:
+            meta = ""
         self.meta.set_text(meta)
+        self.meta.set_visible(bool(meta))
         self.download_icon.set_visible(episode.is_downloaded)
         self.saved_icon.set_visible(episode.saved)
-        self._refresh_play()
+        if app is not None:
+            self._refresh_play()
 
     def toggle_expanded(self) -> None:
         self._expanded = not self._expanded

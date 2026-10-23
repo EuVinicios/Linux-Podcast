@@ -4,6 +4,34 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+Layout mais próximo do Apple Podcasts para macOS, guiado por engenharia reversa (REA) do
+Podcasts.app do macOS 27: strings em pt-BR, tipos das telas e o catálogo de cores do app.
+
+### Alterado
+
+- **Navegação com os nomes da Apple**: Início, Novidades, Top Charts e Buscar; na Biblioteca,
+  Podcasts, Salvos, Downloads, **Últimos Episódios** (nova) e Reproduções Recentes.
+- **Conta no rodapé do menu lateral**, com avatar, usuário e serviço de sincronização (ou
+  “Entrar”), como o botão de perfil da Apple; recolhido, fica só o avatar.
+- **Episódios no formato da Apple**: a data, o título e o resumo vêm seguidos de uma cápsula
+  de reprodução com a duração ou o tempo restante (e uma barrinha de progresso), uma onda
+  animada enquanto o episódio toca e o menu “…” na mesma linha.
+- **Prateleiras**: o título vira “Título ›” para ver tudo (as de gênero abrem o Top Charts da
+  categoria) e as setas de rolagem flutuam sobre as bordas, aparecendo ao passar o mouse.
+- **Página do podcast**: o botão de reprodução continua o episódio em andamento (“Continuar”)
+  e há ordenação “Mais Recentes Primeiro” / “Mais Antigos Primeiro”, lembrada por podcast.
+- A segunda linha do player usa o formato da Apple: “NerdCast — Terça-feira”.
+- No modo claro, o roxo de destaque é o AccentColor do Apple Podcasts (#7224D8).
+
+### Corrigido
+
+- As regras `@media (prefers-color-scheme: dark)` do app (sombras das capas) passam a valer no
+  GTK 4.20+, que avalia essas consultas por provedor de CSS.
+- No Libadwaita com o tema Yaru (Ubuntu), textos e ícones de destaque voltam a usar o roxo do
+  PodFlow em vez da cor de destaque do sistema.
+
 ## [0.3.0] - 2026-10-13
 
 ### Alterado

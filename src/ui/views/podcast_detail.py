@@ -7,7 +7,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Graphene, Gsk, Gtk
 from ...i18n import _
 from ...utils import colors
 from ...utils.text import html_to_text
-from ...utils.time_format import format_long_date
+from ...utils.time_format import format_long_date, format_time_left
 from ..components.cover import CoverImage
 from ..components.episode_row import EpisodeRow
 from ..helpers import clear, get_app, label, status_page
@@ -15,6 +15,8 @@ from .base import ViewPage
 
 BATCH = 40
 FILTERS = (("all", "Todos"), ("unplayed", "Não ouvidos"), ("downloaded", "Baixados"))
+# Apple Podcasts' episode order choices (ShelfKit "Newest First" / "Oldest First").
+ORDERS = (("newest", "Mais Recentes Primeiro"), ("oldest", "Mais Antigos Primeiro"))
 
 
 def _rgba(rgb: colors.RGB, alpha: float) -> Gdk.RGBA:
@@ -58,6 +60,8 @@ class PodcastDetailPage(ViewPage):
         self.podcast_id = podcast_id
         self.podcast = podcast
         self._filter = "all"
+        self._order = app.db.get_setting(f"episode_order:{podcast_id}", "newest")
+        self._resume_id: str | None = None
         self._loaded = 0
         self._total = 0
         self._handlers: list[tuple[object, int]] = []
@@ -91,10 +95,13 @@ class PodcastDetailPage(ViewPage):
         self.follow_button = Gtk.Button(css_classes=["pill"])
         self.follow_button.connect("clicked", lambda *_: self._toggle_follow())
         actions.append(self.follow_button)
+        # Smart play, like Apple's show header: resume the episode in progress,
+        # otherwise play the newest one.
         self.latest_button = Gtk.Button(css_classes=["pill", "latest-button"])
-        self.latest_button.set_child(Adw.ButtonContent(icon_name="media-playback-start-symbolic",
-                                                       label=_("Último episódio")))
-        self.latest_button.connect("clicked", lambda *_: self._play_latest())
+        self.latest_content = Adw.ButtonContent(icon_name="media-playback-start-symbolic",
+                                                label=_("Último episódio"))
+        self.latest_button.set_child(self.latest_content)
+        self.latest_button.connect("clicked", lambda *_: self._smart_play())
         actions.append(self.latest_button)
         info.append(actions)
         self.hero.append(info)
@@ -120,6 +127,17 @@ class PodcastDetailPage(ViewPage):
         self.count_label.set_hexpand(True)
         self.count_label.set_valign(Gtk.Align.CENTER)
         filters.append(self.count_label)
+        order_menu = Gio.Menu()
+        for name, text in ORDERS:
+            order_menu.append(_(text), f"podcast.order('{name}')")
+        self.order_button = Gtk.MenuButton(icon_name="view-sort-ascending-symbolic"
+                                           if self._order == "oldest"
+                                           else "view-sort-descending-symbolic",
+                                           css_classes=["flat", "circular"],
+                                           valign=Gtk.Align.CENTER,
+                                           tooltip_text=_("Ordenar episódios"),
+                                           menu_model=order_menu)
+        filters.append(self.order_button)
         body.append(filters)
 
         self.list_slot = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -153,6 +171,7 @@ class PodcastDetailPage(ViewPage):
         self._handlers = [
             (app.db, app.db.connect("episodes-changed", self._on_episodes_changed)),
             (app.db, app.db.connect("podcast-changed", self._on_podcast_changed)),
+            (app.db, app.db.connect("episode-changed", self._on_episode_changed)),
             (app.library, app.library.connect("refresh-started", self._on_refresh_started)),
             (app.library, app.library.connect("refresh-finished", self._on_refresh_finished)),
         ]
@@ -211,6 +230,7 @@ class PodcastDetailPage(ViewPage):
         self.description.set_visible(bool(description))
         self.more_button.set_visible(len(description) > 240)
         self._update_follow()
+        self._update_smart_play()
         rgb = colors.parse_hex(podcast.accent_color)
         if rgb is not None:
             self._set_backdrop(rgb)
@@ -252,8 +272,22 @@ class PodcastDetailPage(ViewPage):
         self.description.set_lines(3 if expanded else -1)
         self.more_button.set_label(_("Ver mais") if expanded else _("Ver menos"))
 
-    def _play_latest(self) -> None:
-        episode = self.app.db.latest_episode(self.podcast_id)
+    def _update_smart_play(self) -> None:
+        resume = self.app.db.in_progress_episode(self.podcast_id)
+        self._resume_id = resume.id if resume is not None else None
+        if resume is None:
+            self.latest_content.set_label(_("Último episódio"))
+            self.latest_button.set_tooltip_text(None)
+        else:
+            self.latest_content.set_label(_("Continuar"))
+            left = format_time_left(resume.position, resume.duration)
+            self.latest_button.set_tooltip_text(f"{resume.title} · {left}" if left
+                                                else resume.title)
+
+    def _smart_play(self) -> None:
+        episode = self.app.db.get_episode(self._resume_id) if self._resume_id else None
+        if episode is None:
+            episode = self.app.db.latest_episode(self.podcast_id)
         if episode is None:
             self.toast(_("Nenhum episódio disponível ainda"))
             return
@@ -273,6 +307,10 @@ class PodcastDetailPage(ViewPage):
 
     def _install_actions(self) -> None:
         group = Gio.SimpleActionGroup()
+        order = Gio.SimpleAction.new_stateful("order", GLib.VariantType.new("s"),
+                                              GLib.Variant("s", self._order))
+        order.connect("activate", self._on_order)
+        group.add_action(order)
         for name, callback in (("mark-all-played", self._mark_all_played),
                                ("copy-feed", self._copy_feed),
                                ("open-apple", lambda: self._open_uri(self.podcast.apple_url)),
@@ -298,6 +336,14 @@ class PodcastDetailPage(ViewPage):
         Gtk.UriLauncher.new(uri).launch(self.get_root(), None, None, None)
 
     # -- episode list ----------------------------------------------------------------
+
+    def _on_order(self, action: Gio.SimpleAction, value: GLib.Variant) -> None:
+        action.set_state(value)
+        self._order = value.get_string()
+        self.app.db.set_setting(f"episode_order:{self.podcast_id}", self._order)
+        self.order_button.set_icon_name("view-sort-ascending-symbolic" if self._order == "oldest"
+                                        else "view-sort-descending-symbolic")
+        self._reload_list()
 
     def _on_filter_changed(self) -> None:
         self._filter = self.toggle_group.get_active_name() or "all"
@@ -334,7 +380,8 @@ class PodcastDetailPage(ViewPage):
 
     def _append_batch(self, count: int = BATCH) -> None:
         episodes = self.app.db.list_episodes(self.podcast_id, self._filter, limit=count,
-                                             offset=self._loaded)
+                                             offset=self._loaded,
+                                             oldest_first=self._order == "oldest")
         for episode in episodes:
             self.listbox.append(EpisodeRow(episode))
         self._loaded += len(episodes)
@@ -350,6 +397,11 @@ class PodcastDetailPage(ViewPage):
         if podcast_id == self.podcast_id:
             self._update_header()
             self._reload_list(keep=self._loaded)
+
+    def _on_episode_changed(self, db, episode_id: str) -> None:
+        episode = db.get_episode(episode_id)
+        if episode is not None and episode.podcast_id == self.podcast_id:
+            self._update_smart_play()
 
     def _on_podcast_changed(self, _db, podcast_id: str) -> None:
         if podcast_id == self.podcast_id:

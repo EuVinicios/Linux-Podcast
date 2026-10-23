@@ -25,15 +25,16 @@ Apple Podcasts Brasil ([/charts](https://podcasts.apple.com/br/charts) e
 
 ## Recursos
 
-- **Explorar**: carrossel de destaques com a cor de cada capa, “Destaques da Semana”, “Em Alta” e
+- **Novidades**: carrossel de destaques com a cor de cada capa, “Destaques da Semana”, “Em Alta” e
   prateleiras por gênero (Notícias, Comédia, Tecnologia, Sociedade e Cultura, Negócios,
   True Crime, Ciência e Educação).
-- **Rankings**: Top Podcasts e Top Episódios do Brasil, de 1 a 50, com filtro por categoria.
-- **Ouvir Agora**: Continuar Ouvindo (com barra de progresso), fila **A Seguir** e episódios novos
+- **Top Charts**: Top Podcasts e Top Episódios do Brasil, de 1 a 50, com filtro por categoria.
+- **Início**: Continuar Ouvindo (com barra de progresso), fila **A Seguir** e episódios novos
   dos programas que você segue.
-- **Biblioteca**: programas seguidos com selo de novidades, episódios salvos, downloads e histórico.
-- **Página do programa**: cabeçalho imersivo, descrição com “Ver mais” e filtros
-  Todos / Não ouvidos / Baixados.
+- **Biblioteca**: podcasts seguidos com selo de novidades, episódios salvos, downloads,
+  últimos episódios e reproduções recentes.
+- **Página do programa**: cabeçalho imersivo, botão que continua o episódio em andamento,
+  descrição com “Ver mais”, filtros Todos / Não ouvidos / Baixados e ordem dos episódios.
 - **Player sempre à mão**: −15 s / +30 s, velocidade de 0,5× a 2,5× **sem alterar o tom da voz**,
   timer de sono (15/30/45/60 min ou fim do episódio), volume e fila retrátil com arrastar e soltar.
 - **Conta e sincronização** (opcional): programas seguidos e progresso dos episódios em todos
@@ -46,9 +47,9 @@ Apple Podcasts Brasil ([/charts](https://podcasts.apple.com/br/charts) e
   capas e episódios ficam em cache e os episódios podem ser baixados para ouvir sem internet.
 - Busca no catálogo da Apple e adição de qualquer podcast pelo endereço do **feed RSS**.
 
-| Programa | Rankings | Ouvir Agora |
+| Programa | Top Charts | Início |
 |:---:|:---:|:---:|
-| <img src="data/screenshots/podcast.png" width="280" alt="Página do programa"> | <img src="data/screenshots/charts.png" width="280" alt="Rankings"> | <img src="data/screenshots/listen-now.png" width="280" alt="Ouvir Agora"> |
+| <img src="data/screenshots/podcast.png" width="280" alt="Página do programa"> | <img src="data/screenshots/charts.png" width="280" alt="Top Charts"> | <img src="data/screenshots/listen-now.png" width="280" alt="Início"> |
 | **Tema claro** | **Sincronização** | **Celular / janela estreita** |
 | <img src="data/screenshots/explore-light.png" width="280" alt="Tema claro"> | <img src="data/screenshots/sync.png" width="280" alt="Sincronização"> | <img src="data/screenshots/narrow-podcast.png" width="120" alt="Layout estreito"> |
 

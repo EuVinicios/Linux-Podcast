@@ -1,4 +1,8 @@
-"""Horizontally scrolling shelf with a title and arrow buttons."""
+"""Horizontally scrolling shelf, laid out like Apple Podcasts' shelves.
+
+The title doubles as "Ver tudo" ("Title ›"), and the paging arrows float over the
+edges of the row, showing up only while the pointer is over the shelf.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +11,7 @@ from collections.abc import Callable
 from gi.repository import Adw, Gtk
 
 from ...i18n import _
-from ..helpers import clear, label
+from ..helpers import clear, section_header
 
 
 class Shelf(Gtk.Box):
@@ -16,29 +20,8 @@ class Shelf(Gtk.Box):
     def __init__(self, title: str, subtitle: str | None = None,
                  on_see_all: Callable[[], None] | None = None, spacing: int = 18):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=12, css_classes=["shelf"])
-        header = Gtk.Box(spacing=6)
-        titles = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, hexpand=True,
-                         valign=Gtk.Align.END)
-        self.title_label = label(title, ("shelf-title",), ellipsize=True)
-        titles.append(self.title_label)
-        if subtitle:
-            titles.append(label(subtitle, ("shelf-subtitle", "dim-label"), ellipsize=True))
-        header.append(titles)
-        if on_see_all is not None:
-            see_all = Gtk.Button(label=_("Ver tudo"), css_classes=["flat", "see-all"],
-                                 valign=Gtk.Align.END)
-            see_all.connect("clicked", lambda *_: on_see_all())
-            header.append(see_all)
-        self.prev_button = Gtk.Button(icon_name="go-previous-symbolic",
-                                      css_classes=["circular", "flat", "shelf-arrow"],
-                                      tooltip_text=_("Anterior"), valign=Gtk.Align.END)
-        self.next_button = Gtk.Button(icon_name="go-next-symbolic",
-                                      css_classes=["circular", "flat", "shelf-arrow"],
-                                      tooltip_text=_("Próximo"), valign=Gtk.Align.END)
-        self.prev_button.connect("clicked", lambda *_: self._page(-1))
-        self.next_button.connect("clicked", lambda *_: self._page(1))
-        header.append(self.prev_button)
-        header.append(self.next_button)
+        header = section_header(title, subtitle, on_activate=on_see_all)
+        self.title_label = header.title_label
         self.append(header)
 
         self.row = Gtk.Box(spacing=spacing)
@@ -46,7 +29,25 @@ class Shelf(Gtk.Box):
                                            vscrollbar_policy=Gtk.PolicyType.NEVER,
                                            propagate_natural_height=True, child=self.row,
                                            css_classes=["shelf-scroller"])
-        self.append(self.scroller)
+        overlay = Gtk.Overlay(child=self.scroller)
+        self.prev_button = Gtk.Button(icon_name="go-previous-symbolic",
+                                      css_classes=["circular", "shelf-arrow"],
+                                      tooltip_text=_("Anterior"), halign=Gtk.Align.START,
+                                      valign=Gtk.Align.CENTER, margin_start=6, can_target=False)
+        self.next_button = Gtk.Button(icon_name="go-next-symbolic",
+                                      css_classes=["circular", "shelf-arrow"],
+                                      tooltip_text=_("Próximo"), halign=Gtk.Align.END,
+                                      valign=Gtk.Align.CENTER, margin_end=6, can_target=False)
+        self.prev_button.connect("clicked", lambda *_: self._page(-1))
+        self.next_button.connect("clicked", lambda *_: self._page(1))
+        overlay.add_overlay(self.prev_button)
+        overlay.add_overlay(self.next_button)
+        hover = Gtk.EventControllerMotion()
+        hover.connect("enter", lambda *_: self._set_hover(True))
+        hover.connect("leave", lambda *_: self._set_hover(False))
+        overlay.add_controller(hover)
+        self.append(overlay)
+
         self._animation: Adw.TimedAnimation | None = None
         adjustment = self.scroller.get_hadjustment()
         for signal in ("value-changed", "changed"):
@@ -72,14 +73,21 @@ class Shelf(Gtk.Box):
     def is_empty(self) -> bool:
         return self.row.get_first_child() is None
 
+    def _set_hover(self, hover: bool) -> None:
+        # Hidden arrows must not swallow clicks meant for the cards under them.
+        if hover:
+            self.add_css_class("hover")
+        else:
+            self.remove_css_class("hover")
+        self.prev_button.set_can_target(hover)
+        self.next_button.set_can_target(hover)
+
     def _update_arrows(self) -> None:
         adjustment = self.scroller.get_hadjustment()
+        value = adjustment.get_value()
         maximum = adjustment.get_upper() - adjustment.get_page_size()
-        scrollable = maximum > 1
-        self.prev_button.set_visible(scrollable)
-        self.next_button.set_visible(scrollable)
-        self.prev_button.set_sensitive(adjustment.get_value() > 1)
-        self.next_button.set_sensitive(adjustment.get_value() < maximum - 1)
+        self.prev_button.set_visible(maximum > 1 and value > 1)
+        self.next_button.set_visible(maximum > 1 and value < maximum - 1)
 
     def _page(self, direction: int) -> None:
         adjustment = self.scroller.get_hadjustment()

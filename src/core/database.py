@@ -419,9 +419,10 @@ class Database(GObject.Object):
         return ""
 
     def list_episodes(self, podcast_id: str, kind: str = "all", limit: int = 50,
-                      offset: int = 0) -> list[Episode]:
+                      offset: int = 0, oldest_first: bool = False) -> list[Episode]:
+        order = "ASC" if oldest_first else "DESC"
         rows = self._query(_EPISODE_SELECT + " WHERE e.podcast_id = ?" + self._episode_filter(kind)
-                           + " ORDER BY e.published DESC LIMIT ? OFFSET ?",
+                           + f" ORDER BY e.published {order} LIMIT ? OFFSET ?",
                            (podcast_id, limit, offset))
         return [_episode(r) for r in rows]
 
@@ -437,6 +438,19 @@ class Database(GObject.Object):
     def list_in_progress(self, limit: int = 12) -> list[Episode]:
         rows = self._query(_EPISODE_SELECT + " WHERE e.played = 0 AND e.position >= 15 "
                            "ORDER BY COALESCE(e.last_played_at, 0) DESC LIMIT ?", (limit,))
+        return [_episode(r) for r in rows]
+
+    def in_progress_episode(self, podcast_id: str) -> Episode | None:
+        """The show's most recently played unfinished episode, if any."""
+        row = self._one(_EPISODE_SELECT + " WHERE e.podcast_id = ? AND e.played = 0 "
+                        "AND e.position >= 15 ORDER BY COALESCE(e.last_played_at, 0) DESC "
+                        "LIMIT 1", (podcast_id,))
+        return _episode(row) if row else None
+
+    def list_latest_episodes(self, limit: int = 100) -> list[Episode]:
+        """Newest episodes of every followed show, played or not."""
+        rows = self._query(_EPISODE_SELECT + " WHERE p.subscribed = 1 "
+                           "ORDER BY e.published DESC LIMIT ?", (limit,))
         return [_episode(r) for r in rows]
 
     def list_new_episodes(self, days: int = 21, limit: int = 40) -> list[Episode]:

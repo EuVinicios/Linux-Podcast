@@ -7,10 +7,11 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from .i18n import _
 from .ui.components.player_bar import PlayerBar
 from .ui.components.queue_drawer import QueueDrawer
-from .ui.sidebar import SECTION_NAMES, NavigationSidebar
+from .ui.sidebar import SECTION_NAMES, NavigationSidebar, SidebarAccountButton
 from .ui.views.charts_view import ChartsView
 from .ui.views.explore_view import ExploreView
-from .ui.views.library_views import DownloadsView, FollowingView, HistoryView, SavedView
+from .ui.views.library_views import (DownloadsView, FollowingView, HistoryView,
+                                    LatestEpisodesView, SavedView)
 from .ui.views.listen_now_view import ListenNowView
 from .ui.views.podcast_detail import PodcastDetailPage
 from .ui.views.search_view import SearchView
@@ -85,11 +86,15 @@ class PodFlowWindow(Adw.ApplicationWindow):
 
         self.sidebar_bottom_menu = Gtk.MenuButton(icon_name="open-menu-symbolic",
                                                   tooltip_text=_("Menu principal"),
-                                                  css_classes=["flat"],
+                                                  css_classes=["flat"], halign=Gtk.Align.CENTER,
                                                   visible=False)
         self.sidebar_bottom_menu.set_menu_model(self._primary_menu())
-        bottom_box = Gtk.Box(halign=Gtk.Align.CENTER, margin_top=4, margin_bottom=4)
+        # Like Apple's sidebar, the account sits at the foot of the navigation.
+        self.account_button = SidebarAccountButton(self.app.sync)
+        bottom_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4,
+                             css_classes=["sidebar-footer"])
         bottom_box.append(self.sidebar_bottom_menu)
+        bottom_box.append(self.account_button)
         sidebar_toolbar.add_bottom_bar(bottom_box)
 
         sidebar_toolbar.set_content(self.sidebar.widget)
@@ -178,6 +183,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
             self.add_action(action)
 
         add("show-section", lambda _a, v: self.show_section(v.get_string()), "s")
+        add("show-chart-genre", lambda _a, v: self.show_chart_genre(v.get_int32()), "i")
         add("open-podcast", lambda _a, v: self.open_podcast(v.get_string()), "s")
         add("open-current-podcast", lambda *_: self._open_current_podcast())
         add("search", lambda *_: self._focus_search())
@@ -194,6 +200,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
     def set_sidebar_icon_only(self, icon_only: bool) -> None:
         self._sidebar_icon_only = icon_only
         self.sidebar.set_collapsed(icon_only)
+        self.account_button.set_compact(icon_only)
         if icon_only:
             self.split.set_min_sidebar_width(56)
             self.split.set_max_sidebar_width(56)
@@ -251,6 +258,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
                 "following": FollowingView,
                 "saved": lambda: SavedView(self.app),
                 "downloads": lambda: DownloadsView(self.app),
+                "latest": lambda: LatestEpisodesView(self.app),
                 "history": lambda: HistoryView(self.app),
             }
             page = factories[name]()
@@ -270,6 +278,10 @@ class PodFlowWindow(Adw.ApplicationWindow):
         self.split.set_show_content(True)
         if name != "search":
             self.app.db.set_setting("last_section", name)
+
+    def show_chart_genre(self, genre_id: int) -> None:
+        self.show_section("charts")
+        self._page("charts").select_genre(genre_id)
 
     def open_podcast(self, podcast_id: str) -> None:
         if self.app.db.get_podcast(podcast_id) is None:

@@ -1,27 +1,81 @@
-"""Navigation sidebar (AdwSidebar): "Descobrir" and "Biblioteca" sections."""
+"""Navigation sidebar (AdwSidebar): "Descobrir" and "Biblioteca" sections.
+
+Labels follow the pt-BR titles of Apple Podcasts for macOS (TITLE_HOME, TITLE_CATALOG,
+TITLE_TOP_CHARTS, TITLE_SHOWS, TITLE_LATEST_EPISODES, RECENTLY_PLAYED…). Section ids
+stay the same, so saved settings keep working.
+"""
 
 from __future__ import annotations
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gtk, Pango
 
 from ..i18n import _
 
 SECTIONS: list[tuple[str, list[tuple[str, str, str]]]] = [
     ("Descobrir", [
-        ("listen-now", "Ouvir Agora", "media-playback-start-symbolic"),
-        ("explore", "Explorar", "view-app-grid-symbolic"),
-        ("charts", "Rankings", "podflow-chart-symbolic"),
+        ("listen-now", "Início", "go-home-symbolic"),
+        ("explore", "Novidades", "view-app-grid-symbolic"),
+        ("charts", "Top Charts", "podflow-chart-symbolic"),
         ("search", "Buscar", "system-search-symbolic"),
     ]),
     ("Biblioteca", [
-        ("following", "Programas Seguidos", "view-grid-symbolic"),
-        ("saved", "Episódios Salvos", "starred-symbolic"),
+        ("following", "Podcasts", "view-grid-symbolic"),
+        ("saved", "Salvos", "starred-symbolic"),
         ("downloads", "Downloads", "folder-download-symbolic"),
-        ("history", "Histórico", "document-open-recent-symbolic"),
+        ("latest", "Últimos Episódios", "view-list-symbolic"),
+        ("history", "Reproduções Recentes", "document-open-recent-symbolic"),
     ]),
 ]
 
 SECTION_NAMES = [name for _title, items in SECTIONS for name, _label, _icon in items]
+
+
+class SidebarAccountButton(Gtk.Button):
+    """Account shortcut at the foot of the sidebar, like Apple's SidebarProfileButton.
+
+    Shows the sync account (avatar, user and service) or an invitation to sign in,
+    and opens "Conta e sincronização". Icon-only, just the avatar remains.
+    """
+
+    __gtype_name__ = "PodFlowSidebarAccountButton"
+
+    def __init__(self, sync):
+        super().__init__(css_classes=["flat", "sidebar-account"], action_name="app.account")
+        self._sync = sync
+        box = Gtk.Box(spacing=10)
+        self.avatar = Adw.Avatar(size=32, show_initials=True)
+        box.append(self.avatar)
+        self.texts = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER,
+                             hexpand=True)
+        self.name = Gtk.Label(xalign=0, ellipsize=Pango.EllipsizeMode.END,
+                              css_classes=["sidebar-account-name"])
+        self.caption = Gtk.Label(xalign=0, ellipsize=Pango.EllipsizeMode.END,
+                                 css_classes=["sidebar-account-caption", "dim-label"])
+        self.texts.append(self.name)
+        self.texts.append(self.caption)
+        box.append(self.texts)
+        self.set_child(box)
+        sync.connect("changed", lambda *_: self.update())
+        self.update()
+
+    def set_compact(self, compact: bool) -> None:
+        self.texts.set_visible(not compact)
+        self.set_halign(Gtk.Align.CENTER if compact else Gtk.Align.FILL)
+
+    def update(self) -> None:
+        account = self._sync.account
+        if account is None:
+            self.avatar.set_text("")
+            self.avatar.set_icon_name("avatar-default-symbolic")
+            self.name.set_text(_("Entrar"))
+            self.caption.set_text(_("Sincronize seus podcasts"))
+            self.set_tooltip_text(_("Conta e sincronização"))
+        else:
+            username = account["username"]
+            self.avatar.set_text(username)
+            self.name.set_text(username)
+            self.caption.set_text(self._sync.service_name())
+            self.set_tooltip_text(f"{username} · {self._sync.service_name()}")
 
 
 class NavigationSidebar:

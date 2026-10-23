@@ -241,8 +241,9 @@ class PlayerBar(Gtk.Box):
         if episode is None:
             return
         self.title.set_text(episode.title)
+        # Apple's mini player subline: "Podcast — date" (NOWPLAYING_PODCAST_ARTIST_FORMAT).
         details = (episode.podcast_title, format_date(episode.published))
-        self.subtitle.set_text(" · ".join(part for part in details if part))
+        self.subtitle.set_text(" — ".join(part for part in details if part))
         self.cover.set_source(episode.cover_url, episode.podcast_title, episode.podcast_accent)
         self._update_times(self.playback.position, self.playback.duration)
         self._sync_state()
