@@ -9,7 +9,7 @@ from gi.repository import GLib
 
 APP_ID = "io.github.euvinicios.PodFlow"
 APP_NAME = "PodFlow"
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 GETTEXT_DOMAIN = "podflow"
 DEVELOPER = "EuVinicios"
 WEBSITE = "https://euvinicios.github.io/Linux-Podcast/"
