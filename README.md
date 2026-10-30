@@ -72,12 +72,12 @@ sudo snap connect podflow:password-manager-service   # opcional: senha da sincro
 O `.deb` usa o GTK, a Libadwaita e o GStreamer do próprio sistema, por isso é leve (≈ 80 KB) e se
 integra perfeitamente ao Ubuntu.
 
-1. Baixe `podflow_0.4.0_all.deb` na página de
+1. Baixe `podflow_0.5.0_all.deb` na página de
    [**Releases**](https://github.com/EuVinicios/Linux-Podcast/releases/latest).
 2. Instale pelo terminal, na pasta do download:
 
    ```bash
-   sudo apt install ./podflow_0.4.0_all.deb
+   sudo apt install ./podflow_0.5.0_all.deb
    ```
 
 3. Abra **PodFlow** no menu de aplicativos.
@@ -222,7 +222,7 @@ Followed shows and episode progress can optionally be synced with gpodder.net, N
 (GPodder Sync) or any gPodder-compatible server, so it plays along with AntennaPod and Kasts.
 
 Install it from the Ubuntu App Center (`sudo snap install podflow`) or, on Ubuntu 26.04+, with the
-`.deb` (`sudo apt install ./podflow_0.4.0_all.deb`) from the
+`.deb` (`sudo apt install ./podflow_0.5.0_all.deb`) from the
 [Releases page](https://github.com/EuVinicios/Linux-Podcast/releases/latest).
 Website: <https://euvinicios.github.io/Linux-Podcast/>.
 Licensed under GPL-3.0-or-later. Not affiliated with Apple Inc.

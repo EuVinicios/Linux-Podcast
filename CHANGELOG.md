@@ -4,6 +4,23 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.5.0] - 2026-10-29
+
+### Adicionado
+
+- **Tela de execução (“Em Reprodução”) no estilo do Apple Podcasts**: clicar na capa, no título
+  ou em qualquer área livre da barra de reprodução abre a folha de execução em tela cheia
+  (`Adw.BottomSheet`) com:
+  - Fundo com degradê extraído da cor dominante da capa do episódio/programa;
+  - Capa em destaque com animação suave de escala entre pausado e reproduzindo;
+  - Data/temporada/número do episódio, título com letreiro deslizante, atalho para o programa e
+    botão de favoritar (Salvos);
+  - Barra de progresso com tempo decorrido e tempo restante (`-mm:ss`), controles grandes de
+    −15 s, reproduzir/pausar e +30 s, e controle de volume dedicado;
+  - Barra inferior de utilidades com velocidade de reprodução, timer de sono, **Notas do
+    episódio** e fila **A Seguir** interativa (arrastar e soltar), adaptando-se entre painel
+    lateral em janelas largas e visualização recolhível em janelas estreitas.
+
 ## [0.4.0] - 2026-10-23
 
 Layout mais próximo do Apple Podcasts para macOS, guiado por engenharia reversa (REA) do
@@ -99,6 +116,7 @@ Primeira versão pública. 🎉
 - Busca no catálogo da Apple e adição de podcasts por URL de feed RSS.
 - Pacotes `.deb` (Ubuntu 26.04+) e Flatpak (GNOME 50) gerados automaticamente no GitHub Actions.
 
+[0.5.0]: https://github.com/EuVinicios/Linux-Podcast/releases/tag/v0.5.0
 [0.4.0]: https://github.com/EuVinicios/Linux-Podcast/releases/tag/v0.4.0
 [0.3.0]: https://github.com/EuVinicios/Linux-Podcast/releases/tag/v0.3.0
 [0.2.0]: https://github.com/EuVinicios/Linux-Podcast/releases/tag/v0.2.0

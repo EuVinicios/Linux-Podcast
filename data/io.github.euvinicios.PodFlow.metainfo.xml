@@ -107,6 +107,16 @@
   </screenshots>
 
   <releases>
+    <release version="0.5.0" date="2026-10-29">
+      <description>
+        <p>Full-screen Now Playing sheet inspired by Apple Podcasts.</p>
+        <ul>
+          <li>Click the player bar to open the Now Playing sheet with large artwork, dynamic cover-tinted backdrop, full transport and volume controls</li>
+          <li>Artwork scales smoothly with playback state</li>
+          <li>Toggle episode notes and the interactive Up Next queue right inside Now Playing</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-10-23">
       <description>
         <p>A layout closer to Apple Podcasts for macOS.</p>

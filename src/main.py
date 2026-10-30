@@ -302,11 +302,11 @@ class PodFlowApplication(Adw.Application):
             support_url=f"{config.WEBSITE}#perguntas",
             release_notes_version=config.VERSION,
             release_notes=_(
-                "<p>Contas e sincronização, visual novo e pacote snap.</p><ul>"
-                "<li>Sincronize programas e progresso com gpodder.net, Nextcloud ou um "
-                "servidor compatível com o gPodder</li>"
-                "<li>Novo ícone e cor de destaque roxa (ou a do sistema, nas Preferências)</li>"
-                "<li>Senhas guardadas no chaveiro do sistema</li></ul>"),
+                "<p>Tela de execução no estilo do Apple Podcasts.</p><ul>"
+                "<li>Clique na barra de reprodução para abrir a tela Em Reprodução com capa "
+                "grande, fundo colorido da capa, controles completos e volume</li>"
+                "<li>Notas do episódio e fila A Seguir integradas na tela de execução</li>"
+                "<li>Animação da capa conforme o estado de reprodução</li></ul>"),
         )
         about.add_link(_("Código-fonte"), config.REPOSITORY)
         about.add_link(_("Política de privacidade"), f"{config.WEBSITE}privacidade.html")
