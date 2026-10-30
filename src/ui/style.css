@@ -559,6 +559,215 @@ scale.mini-progress > trough > slider {
   font-feature-settings: "tnum";
 }
 
+/* ---------- Now Playing sheet ---------- */
+
+.now-playing-sheet {
+  background-color: var(--window-bg-color);
+}
+
+.now-playing-root {
+  padding: 6px 24px 24px 24px;
+}
+
+.now-playing-sheet.compact .now-playing-root {
+  padding: 4px 16px 18px 16px;
+}
+
+.now-playing-header {
+  padding: 4px 0 8px 0;
+}
+
+.np-header-btn {
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.np-header-btn.pill {
+  padding: 4px 14px;
+}
+
+.np-header-btn:hover {
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.now-playing-body {
+  padding: 8px 12px 16px 12px;
+}
+
+.now-playing-sheet.compact .now-playing-body {
+  padding: 4px 2px 10px 2px;
+}
+
+/* Apple Podcasts cover scale transition: slightly smaller at rest, full scale when playing. */
+.now-playing-cover-wrap {
+  margin: 6px 0 8px 0;
+  transform: scale(0.90);
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.now-playing-cover-wrap.playing {
+  transform: scale(1.0);
+}
+
+.np-eyebrow {
+  font-size: 0.75em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.np-title {
+  font-size: 1.32em;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.np-podcast-button {
+  padding: 2px 8px;
+  margin-left: -8px;
+  min-height: 0;
+  border-radius: 8px;
+}
+
+.np-podcast {
+  font-size: 1.04em;
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.np-icon-btn {
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.np-icon-btn:hover {
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+scale.now-playing-scale > trough {
+  min-height: 6px;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, currentColor 20%, transparent);
+}
+
+scale.now-playing-scale > trough > highlight {
+  border-radius: 999px;
+  background-color: var(--accent-bg-color);
+}
+
+scale.now-playing-scale > trough > slider {
+  min-width: 14px;
+  min-height: 14px;
+  margin: -5px;
+  border-radius: 999px;
+  background-color: currentColor;
+}
+
+.np-times-row {
+  margin-top: -2px;
+}
+
+.np-transport {
+  min-width: 52px;
+  min-height: 52px;
+  border-radius: 999px;
+  padding: 4px;
+}
+
+.np-skip-number {
+  font-size: 8.5pt;
+  font-weight: 800;
+  font-feature-settings: "tnum";
+}
+
+.np-play {
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: 999px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent-bg-color) 50%, transparent);
+}
+
+.np-vol-btn {
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: 999px;
+}
+
+scale.now-playing-volume > trough {
+  min-height: 5px;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, currentColor 20%, transparent);
+}
+
+scale.now-playing-volume > trough > highlight {
+  border-radius: 999px;
+  background-color: color-mix(in srgb, currentColor 72%, transparent);
+}
+
+scale.now-playing-volume > trough > slider {
+  min-width: 12px;
+  min-height: 12px;
+  margin: -4px;
+  border-radius: 999px;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+scale.now-playing-volume:hover > trough > slider,
+scale.now-playing-volume:focus-visible > trough > slider {
+  opacity: 1;
+}
+
+.np-pill {
+  min-height: 36px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.np-pill:hover {
+  background-color: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.np-pill:checked {
+  color: var(--accent-fg-color);
+  background-color: var(--accent-bg-color);
+}
+
+.now-playing-panel {
+  padding: 16px;
+  border-radius: 18px;
+  background-color: color-mix(in srgb, var(--card-bg-color) 82%, transparent);
+  box-shadow: 0 0 0 1px alpha(black, 0.06), 0 8px 24px alpha(black, 0.12);
+}
+
+.np-notes-body {
+  padding: 4px 6px 12px 2px;
+}
+
+.np-notes-text {
+  line-height: 1.48;
+}
+
+.np-compact-header {
+  padding: 8px 10px;
+  border-radius: 14px;
+  background-color: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.np-compact-header:hover {
+  background-color: color-mix(in srgb, currentColor 11%, transparent);
+}
+
+.np-compact-title {
+  font-weight: 700;
+  font-size: 0.98em;
+}
+
 /* ---------- Queue drawer ---------- */
 
 .queue-content {

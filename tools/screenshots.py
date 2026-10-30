@@ -179,6 +179,10 @@ def start(app: PodFlowApplication) -> None:
             d.add(f"voltar {provider}", lambda: d.win.get_visible_dialog().pop_subpage(), 0.3)
     d.add("fecha conta", lambda: d.win.get_visible_dialog().close(), 0.4)
     if ARGS.smoke:
+        d.add("tela de execução", lambda: d.win.open_now_playing(), 0.4)
+        d.add("notas na execução", lambda: d.win.now_playing.notes_button.set_active(True), 0.3)
+        d.add("fila na execução", lambda: d.win.now_playing.queue_button.set_active(True), 0.3)
+        d.add("fechar execução", lambda: d.win.close_now_playing(), 0.3)
         d.add("preferências", lambda: d.app.activate_action("preferences", None), 0.5)
         d.add("sobre", lambda: d.app.activate_action("about", None), 0.5)
         d.add("atalhos", lambda: d.app.activate_action("shortcuts", None), 0.5)

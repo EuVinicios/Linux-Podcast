@@ -5,6 +5,7 @@ from __future__ import annotations
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from .i18n import _
+from .ui.components.now_playing import NowPlayingView
 from .ui.components.player_bar import PlayerBar
 from .ui.components.queue_drawer import QueueDrawer
 from .ui.sidebar import SECTION_NAMES, NavigationSidebar, SidebarAccountButton
@@ -121,7 +122,15 @@ class PodFlowWindow(Adw.ApplicationWindow):
                                              transition_type=Gtk.RevealerTransitionType.SLIDE_UP)
         outer.add_bottom_bar(self.player_revealer)
 
-        self.toast_overlay.set_child(outer)
+        self.now_playing = NowPlayingView()
+        self.now_playing_sheet = Adw.BottomSheet(
+            content=outer,
+            sheet=self.now_playing,
+            full_width=True,
+            show_drag_handle=True,
+            can_open=False,
+        )
+        self.toast_overlay.set_child(self.now_playing_sheet)
         self.set_content(self.toast_overlay)
 
     def _primary_menu(self) -> Gio.Menu:
@@ -164,6 +173,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
 
     def _set_compact(self, compact: bool) -> None:
         self._compact = compact
+        self.now_playing.set_compact(compact)
         if compact:
             self.add_css_class("compact")
         else:
@@ -186,6 +196,9 @@ class PodFlowWindow(Adw.ApplicationWindow):
         add("show-chart-genre", lambda _a, v: self.show_chart_genre(v.get_int32()), "i")
         add("open-podcast", lambda _a, v: self.open_podcast(v.get_string()), "s")
         add("open-current-podcast", lambda *_: self._open_current_podcast())
+        add("open-now-playing", lambda *_: self.open_now_playing())
+        add("close-now-playing", lambda *_: self.close_now_playing())
+        add("toggle-now-playing", lambda *_: self.toggle_now_playing())
         add("search", lambda *_: self._focus_search())
         add("refresh", lambda *_: self._refresh_visible())
         add("toggle-sidebar", lambda *_: self.toggle_sidebar())
@@ -267,6 +280,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
         return page
 
     def show_section(self, name: str) -> None:
+        self.close_now_playing()
         if name not in SECTION_NAMES:
             name = "listen-now"
         page = self._page(name)
@@ -284,6 +298,7 @@ class PodFlowWindow(Adw.ApplicationWindow):
         self._page("charts").select_genre(genre_id)
 
     def open_podcast(self, podcast_id: str) -> None:
+        self.close_now_playing()
         if self.app.db.get_podcast(podcast_id) is None:
             return
         visible = self.content_nav.get_visible_page()
@@ -295,9 +310,24 @@ class PodFlowWindow(Adw.ApplicationWindow):
         self.split.set_show_content(True)
 
     def _open_current_podcast(self) -> None:
+        self.close_now_playing()
         current = self.app.playback.current
         if current is not None:
             self.open_podcast(current.podcast_id)
+
+    def open_now_playing(self) -> None:
+        if self.app.playback.current is not None:
+            self.now_playing_sheet.set_open(True)
+
+    def close_now_playing(self) -> None:
+        if self.now_playing_sheet.get_open():
+            self.now_playing_sheet.set_open(False)
+
+    def toggle_now_playing(self) -> None:
+        if self.now_playing_sheet.get_open():
+            self.close_now_playing()
+        else:
+            self.open_now_playing()
 
     def _focus_search(self) -> None:
         self.show_section("search")
@@ -309,7 +339,10 @@ class PodFlowWindow(Adw.ApplicationWindow):
             visible.refresh(force=True)
 
     def _sync_player_visibility(self) -> None:
-        self.player_revealer.set_reveal_child(self.app.playback.current is not None)
+        has_episode = self.app.playback.current is not None
+        self.player_revealer.set_reveal_child(has_episode)
+        if not has_episode:
+            self.close_now_playing()
 
     def _update_badges(self) -> None:
         total = sum(p.new_count for p in self.app.db.list_subscriptions())

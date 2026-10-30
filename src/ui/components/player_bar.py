@@ -14,11 +14,12 @@ from .marquee import MarqueeLabel
 from .sleep_timer import SleepTimerButton, sleep_menu
 
 
-def _skip_icon(icon_name: str, seconds: str) -> Gtk.Widget:
+def _skip_icon(icon_name: str, seconds: str, pixel_size: int = 26,
+               number_css: str = "skip-number") -> Gtk.Widget:
     """Circular arrow with the number of seconds drawn as real text."""
     overlay = Gtk.Overlay()
-    overlay.set_child(Gtk.Image(icon_name=icon_name, pixel_size=26))
-    number = Gtk.Label(label=seconds, css_classes=["skip-number"], halign=Gtk.Align.CENTER,
+    overlay.set_child(Gtk.Image(icon_name=icon_name, pixel_size=pixel_size))
+    number = Gtk.Label(label=seconds, css_classes=[number_css], halign=Gtk.Align.CENTER,
                        valign=Gtk.Align.CENTER, margin_top=2)
     number.set_can_target(False)
     overlay.add_overlay(number)
@@ -127,8 +128,8 @@ class PlayerBar(Gtk.Box):
         # -- start: artwork + titles
         start = Gtk.Box(spacing=12, valign=Gtk.Align.CENTER)
         self.cover_button = Gtk.Button(css_classes=["flat", "player-cover"],
-                                       action_name="win.open-current-podcast",
-                                       tooltip_text=_("Ver programa"))
+                                       action_name="win.open-now-playing",
+                                       tooltip_text=_("Abrir tela de execução"))
         self.cover = CoverImage(52, radius=8)
         self.cover_button.set_child(self.cover)
         start.append(self.cover_button)
@@ -140,11 +141,6 @@ class PlayerBar(Gtk.Box):
         titles.append(self.title)
         self.subtitle = MarqueeLabel(("player-subtitle", "dim-label"))
         titles.append(self.subtitle)
-        # Like the artwork, clicking the titles opens the show.
-        open_show = Gtk.GestureClick()
-        open_show.connect("released", lambda *_: self.activate_action(
-            "win.open-current-podcast", None))
-        titles.add_controller(open_show)
         titles.set_cursor_from_name("pointer")
         start.append(titles)
 
@@ -213,7 +209,27 @@ class PlayerBar(Gtk.Box):
             end.append(widget)
 
         self.row = PlayerRow(start, center, end)
+        self.row.set_cursor_from_name("pointer")
         self.append(self.row)
+
+        self._interactive_controls = (
+            self.cover_button,
+            self.back_button,
+            self.play_button,
+            self.forward_button,
+            self.scale,
+            self.mini_scale,
+            self.speed_button,
+            self.sleep_button,
+            self.queue_button,
+            self.volume_button,
+            self.overflow_button,
+        )
+        self._press_on_control = False
+        bar_click = Gtk.GestureClick()
+        bar_click.connect("pressed", self._on_bar_pressed)
+        bar_click.connect("released", self._on_bar_released)
+        self.add_controller(bar_click)
 
         self.connect("notify::compact", lambda *_: self._apply_compact())
         self.connect("notify::condensed", lambda *_: self._apply_compact())
@@ -306,6 +322,27 @@ class PlayerBar(Gtk.Box):
     def _on_volume_external(self, _pb, volume: float) -> None:
         if abs(self.volume_button.get_value() - volume) > 0.001:
             self.volume_button.set_value(volume)
+
+    def _is_interactive_control(self, x: float, y: float) -> bool:
+        picked = self.pick(x, y, Gtk.PickFlags.DEFAULT)
+        widget = picked
+        while widget is not None and widget is not self:
+            if widget in self._interactive_controls:
+                return True
+            widget = widget.get_parent()
+        return False
+
+    def _on_bar_pressed(self, _gesture, _n_press: int, x: float, y: float) -> None:
+        self._press_on_control = self._is_interactive_control(x, y)
+
+    def _on_bar_released(self, _gesture, _n_press: int, x: float, y: float) -> None:
+        if self._press_on_control or self._user_seeking or self.playback.current is None:
+            return
+        if not (0 <= x <= self.get_width() and 0 <= y <= self.get_height()):
+            return
+        if self._is_interactive_control(x, y):
+            return
+        self.activate_action("win.open-now-playing", None)
 
     def _apply_compact(self) -> None:
         compact = self.compact
