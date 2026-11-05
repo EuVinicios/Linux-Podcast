@@ -353,8 +353,13 @@ class Database(GObject.Object):
         self._emit("subscriptions-changed")
 
     def mark_podcast_seen(self, podcast_id: str) -> None:
-        if self._exec("UPDATE podcasts SET last_seen_at = ? WHERE id = ? AND subscribed = 1",
-                      (_now(), podcast_id)):
+        now = _now()
+        if self._exec(
+            "UPDATE podcasts SET last_seen_at = ("
+            "  SELECT MAX(?, COALESCE(MAX(published), 0)) FROM episodes WHERE podcast_id = ?"
+            ") WHERE id = ? AND subscribed = 1",
+            (now, podcast_id, podcast_id),
+        ):
             self._emit("subscriptions-changed")
 
     def mark_all_seen(self) -> dict[str, int | None]:
@@ -364,7 +369,13 @@ class Database(GObject.Object):
         caller can offer undo via :meth:`restore_seen`."""
         marks = {r["id"]: r["last_seen_at"] for r in self._query(
             "SELECT id, last_seen_at FROM podcasts WHERE subscribed = 1")}
-        self._exec("UPDATE podcasts SET last_seen_at = ? WHERE subscribed = 1", (_now(),))
+        now = _now()
+        self._exec(
+            "UPDATE podcasts SET last_seen_at = ("
+            "  SELECT MAX(?, COALESCE(MAX(e.published), 0)) FROM episodes e WHERE e.podcast_id = podcasts.id"
+            ") WHERE subscribed = 1",
+            (now,),
+        )
         self._emit("subscriptions-changed")
         return marks
 
@@ -547,11 +558,14 @@ class Database(GObject.Object):
             "SELECT id FROM episodes WHERE podcast_id = ? AND played = 0", (podcast_id,))]
         self._exec("UPDATE episodes SET played = 1, played_at = ?, position = 0 "
                    "WHERE podcast_id = ? AND played = 0", (_now(), podcast_id))
+        self._exec("UPDATE podcasts SET last_seen_at = ? WHERE id = ? AND subscribed = 1",
+                   (_now(), podcast_id))
         for episode_id in ids if self.sync_recording else ():
             row = self._one("SELECT duration FROM episodes WHERE id = ?", (episode_id,))
             if row and row["duration"]:
                 self.sync_record(episode_id, "play", 0, row["duration"], row["duration"])
         self._emit("episodes-changed", podcast_id)
+        self._emit("subscriptions-changed")
 
     def set_saved(self, episode_id: str, saved: bool) -> None:
         self._exec("UPDATE episodes SET saved = ?, saved_at = ? WHERE id = ?",

@@ -144,6 +144,19 @@ class DatabaseTests(unittest.TestCase):
         self.assertIn(fresh.id, [e.id for e in self.db.list_new_episodes()])
         self.db.mark_podcast_seen("feed:abc")
         time.sleep(0.01)
+        self.assertEqual(self.db.get_podcast("feed:abc").new_count, 0)
+
+    def test_mark_all_played(self):
+        self.db.set_subscribed("feed:abc", True)
+        self.assertEqual(self.db.count_episodes("feed:abc", "unplayed"), 5)
+        signals = []
+        self.db.connect("episodes-changed", lambda _db, pid: signals.append(("episodes", pid)))
+        self.db.connect("subscriptions-changed", lambda _db: signals.append(("subscriptions",)))
+        self.db.mark_all_played("feed:abc")
+        self.assertEqual(self.db.count_episodes("feed:abc", "unplayed"), 0)
+        self.assertEqual(self.db.get_podcast("feed:abc").new_count, 0)
+        self.assertIn(("episodes", "feed:abc"), signals)
+        self.assertIn(("subscriptions",), signals)
 
     def test_downloads_reset_and_signals(self):
         received = []

@@ -340,9 +340,28 @@ class PodFlowWindow(Adw.ApplicationWindow):
         podcast = self.app.db.get_podcast(podcast_id)
         if podcast is None:
             return
+        unplayed_ids = [r["id"] for r in self.app.db._query(
+            "SELECT id FROM episodes WHERE podcast_id = ? AND played = 0", (podcast_id,))]
+        prev_seen = podcast.last_seen_at
+        self.app.db.mark_all_played(podcast_id)
         self.app.db.mark_podcast_seen(podcast_id)
-        self.show_toast(_("Novidades de “{title}” marcadas como vistas")
-                        .format(title=podcast.title))
+
+        def undo() -> None:
+            for eid in unplayed_ids:
+                self.app.db.set_played(eid, False)
+            if prev_seen is not None:
+                self.app.db._exec("UPDATE podcasts SET last_seen_at = ? WHERE id = ?",
+                                  (prev_seen, podcast_id))
+            self.app.db._emit("episodes-changed", podcast_id)
+            self.app.db._emit("subscriptions-changed")
+
+        if unplayed_ids:
+            self.show_undo_toast(
+                _("Episódios de “{title}” marcados como vistos").format(title=podcast.title),
+                undo=undo)
+        else:
+            self.show_toast(
+                _("Novidades de “{title}” marcadas como vistas").format(title=podcast.title))
 
     def _play_podcast_latest(self, podcast_id: str) -> None:
         episode = self.app.db.latest_episode(podcast_id)
