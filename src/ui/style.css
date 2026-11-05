@@ -202,7 +202,11 @@ window.compact .page-content {
   min-height: 9px;
   border-radius: 50%;
   background-color: var(--accent-color);
-  margin-top: 7px;
+  transition: opacity 200ms ease;
+}
+
+.new-dot.fade-out {
+  opacity: 0;
 }
 
 .episode-summary {

@@ -74,9 +74,17 @@ class PodcastCard(Gtk.Box):
             right_click.set_button(Gdk.BUTTON_SECONDARY)
             right_click.connect("pressed", self._on_right_click)
             self.add_controller(right_click)
+            # Touch has no right click: long press opens the same menu.
+            long_press = Gtk.GestureLongPress(touch_only=True)
+            long_press.connect("pressed", self._on_long_press)
+            self.add_controller(long_press)
 
     def _on_right_click(self, _gesture: Gtk.GestureClick, _n_press: int,
                         x: float, y: float) -> None:
+        if self._on_context is not None:
+            self._on_context(self, x, y)
+
+    def _on_long_press(self, _gesture: Gtk.GestureLongPress, x: float, y: float) -> None:
         if self._on_context is not None:
             self._on_context(self, x, y)
 

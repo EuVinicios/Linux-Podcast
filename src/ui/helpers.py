@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 
-from gi.repository import Adw, Gio, GLib, GObject, Gtk, Pango
+from gi.repository import Adw, Gdk, Gio, GLib, GObject, Gtk, Pango
 
 from ..i18n import _
 from ..models import Episode, Podcast
@@ -147,6 +147,17 @@ def podcast_menu(podcast: Podcast) -> Gio.Menu:
     links.append_item(menu_item(_("Deixar de seguir"), "win.unfollow-podcast", podcast.id))
     menu.append_section(None, links)
     return menu
+
+
+def show_card_menu(podcast: Podcast, card: Gtk.Widget, x: float, y: float) -> None:
+    """Open the show card menu at the pointer, used by right click and long press."""
+    popover = Gtk.PopoverMenu(menu_model=podcast_menu(podcast), has_arrow=False)
+    popover.set_parent(card)
+    rect = Gdk.Rectangle()
+    rect.x, rect.y, rect.width, rect.height = int(x), int(y), 1, 1
+    popover.set_pointing_to(rect)
+    popover.connect("closed", lambda p: p.unparent())
+    popover.popup()
 
 
 def episode_menu(episode: Episode, *, in_queue: bool, downloading: bool,

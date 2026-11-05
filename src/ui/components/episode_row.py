@@ -156,6 +156,7 @@ class EpisodeRow(Gtk.ListBoxRow):
         self.new_dot = Gtk.Box(css_classes=["new-dot"], valign=Gtk.Align.START, margin_top=7,
                                tooltip_text=_("Novo episódio"))
         self.new_dot.set_visible(episode.is_new)
+        self._dot_source = 0
         title_box.append(self.new_dot)
         title_box.append(self.title)
         body.append(self.eyebrow)
@@ -215,6 +216,9 @@ class EpisodeRow(Gtk.ListBoxRow):
         for obj, handler in self._handlers:
             obj.disconnect(handler)
         self._handlers = []
+        if self._dot_source:
+            GLib.source_remove(self._dot_source)
+            self._dot_source = 0
         self.play.waveform.set_running(False)
         Gtk.ListBoxRow.do_unroot(self)
 
@@ -251,6 +255,28 @@ class EpisodeRow(Gtk.ListBoxRow):
         position = get_app().playback.position if current else None
         self.play.update(self.episode, current, playing, position)
 
+    # -- new episode dot ----------------------------------------------------------------
+
+    def _update_dot(self, is_new: bool) -> None:
+        """Reveal or fade the dot. Fading keeps the space until the animation ends,
+        so the title never jumps while the dot dissolves (Apple-style polish)."""
+        if is_new:
+            if self._dot_source:
+                GLib.source_remove(self._dot_source)
+                self._dot_source = 0
+            self.new_dot.remove_css_class("fade-out")
+            self.new_dot.set_visible(True)
+        elif self.new_dot.get_visible() and not self._dot_source:
+            self.new_dot.add_css_class("fade-out")
+            self._dot_source = GLib.timeout_add(240, self._collapse_dot)
+
+    def _collapse_dot(self) -> None:
+        """Called once the 200ms fade finished; releases the reserved space."""
+        self._dot_source = 0
+        self.new_dot.set_visible(False)
+        self.new_dot.remove_css_class("fade-out")
+        return GLib.SOURCE_REMOVE
+
     def _refresh(self) -> None:
         episode = self.episode
         eyebrow = format_date(episode.published)
@@ -263,7 +289,7 @@ class EpisodeRow(Gtk.ListBoxRow):
             self.title.add_css_class("played")
         else:
             self.title.remove_css_class("played")
-        self.new_dot.set_visible(episode.is_new)
+        self._update_dot(episode.is_new)
 
         app = get_app()
         downloading = app is not None and app.downloads.is_active(episode.id)

@@ -8,7 +8,7 @@ from ...i18n import _
 from ..components.episode_row import EpisodeRow
 from ..components.podcast_card import EpisodeCard, PodcastCard
 from ..components.shelf import Shelf
-from ..helpers import clear, label, page_box, scrolled_page, section_header
+from ..helpers import clear, label, page_box, scrolled_page, section_header, show_card_menu
 from .base import ViewPage
 
 NEW_EPISODES_LIMIT = 30
@@ -88,7 +88,9 @@ class ListenNowView(ViewPage):
                 podcast.title, podcast.author, podcast.artwork_url, podcast.accent_color,
                 size=150, badge=podcast.new_count,
                 on_activate=lambda p=podcast: self.open_podcast(p.id),
-                on_play=lambda p=podcast: self.play_latest(p)) for podcast in subscriptions[:20]])
+                on_play=lambda p=podcast: self.play_latest(p),
+                on_context=lambda c, x, y, p=podcast: show_card_menu(p, c, x, y))
+                for podcast in subscriptions[:20]])
             self.content.append(shelf)
             if not new_episodes and not in_progress:
                 hint = label(_("Os episódios mais recentes dos seus programas aparecem aqui "

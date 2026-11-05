@@ -11,7 +11,7 @@ from ...models import Episode
 from ...utils.time_format import format_size
 from ..components.episode_row import EpisodeRow
 from ..components.podcast_card import PodcastCard
-from ..helpers import clear, page_box, podcast_menu, scrolled_page, status_page
+from ..helpers import clear, page_box, scrolled_page, show_card_menu, status_page
 from .base import ViewPage
 
 
@@ -75,13 +75,7 @@ class FollowingView(ViewPage):
 
     def _show_card_menu(self, podcast, card: Gtk.Widget, x: float, y: float) -> None:
         """Right-click menu on a show card, like Apple Podcasts' long press."""
-        popover = Gtk.PopoverMenu(menu_model=podcast_menu(podcast), has_arrow=False)
-        popover.set_parent(card)
-        rect = Gdk.Rectangle()
-        rect.x, rect.y, rect.width, rect.height = int(x), int(y), 1, 1
-        popover.set_pointing_to(rect)
-        popover.connect("closed", lambda p: p.unparent())
-        popover.popup()
+        show_card_menu(podcast, card, x, y)
 
     def set_compact(self, compact: bool) -> None:
         changed = compact != self.compact
