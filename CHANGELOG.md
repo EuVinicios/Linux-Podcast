@@ -4,6 +4,15 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.6.1] - 2026-11-05
+
+### Corrigido
+
+- **Marcar podcast como visto no menu de contexto**: ao clicar com o botão direito em um
+  card de programa e selecionar *Marcar como visto*, todos os episódios não ouvidos agora são
+  efetivamente marcados como ouvidos e sincronizados com a conta conectada (gPodder/Nextcloud),
+  além de limpar o selo de novidades e oferecer a opção de *Desfazer* via notificação.
+
 ## [0.6.0] - 2026-11-04
 
 ### Adicionado

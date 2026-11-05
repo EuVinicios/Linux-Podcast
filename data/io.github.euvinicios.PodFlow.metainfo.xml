@@ -107,6 +107,14 @@
   </screenshots>
 
   <releases>
+    <release version="0.6.1" date="2026-11-05">
+      <description>
+        <p>Bug fix release.</p>
+        <ul>
+          <li>Fix "Mark as seen" in podcast card context menu to mark episodes as played, sync with connected accounts and offer undo</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.0" date="2026-11-04">
       <description>
         <p>New-episode indicators and context menus, like Apple Podcasts.</p>
