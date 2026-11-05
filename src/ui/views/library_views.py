@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from ...i18n import _
 from ...models import Episode
 from ...utils.time_format import format_size
 from ..components.episode_row import EpisodeRow
 from ..components.podcast_card import PodcastCard
-from ..helpers import clear, page_box, scrolled_page, status_page
+from ..helpers import clear, page_box, podcast_menu, scrolled_page, status_page
 from .base import ViewPage
 
 
@@ -68,8 +68,20 @@ class FollowingView(ViewPage):
             card = PodcastCard(podcast.title, podcast.author, podcast.artwork_url,
                                podcast.accent_color, size=size, badge=podcast.new_count,
                                on_activate=lambda p=podcast: self.open_podcast(p.id),
-                               on_play=lambda p=podcast: self.play_latest(p))
+                               on_play=lambda p=podcast: self.play_latest(p),
+                               on_context=lambda c, x, y, p=podcast:
+                                   self._show_card_menu(p, c, x, y))
             self.flow.append(card)
+
+    def _show_card_menu(self, podcast, card: Gtk.Widget, x: float, y: float) -> None:
+        """Right-click menu on a show card, like Apple Podcasts' long press."""
+        popover = Gtk.PopoverMenu(menu_model=podcast_menu(podcast), has_arrow=False)
+        popover.set_parent(card)
+        rect = Gdk.Rectangle()
+        rect.x, rect.y, rect.width, rect.height = int(x), int(y), 1, 1
+        popover.set_pointing_to(rect)
+        popover.connect("closed", lambda p: p.unparent())
+        popover.popup()
 
     def set_compact(self, compact: bool) -> None:
         changed = compact != self.compact
@@ -107,7 +119,8 @@ class EpisodeListView(ViewPage):
 
     def rebuild(self) -> None:
         clear(self.listbox)
-        episodes = self._fetch()
+        self._episodes = self._fetch()
+        episodes = self._episodes
         self.empty.set_visible(not episodes)
         self.listbox.set_visible(bool(episodes))
         self.summary.set_visible(bool(episodes))
@@ -172,6 +185,25 @@ class LatestEpisodesView(EpisodeListView):
                          _("Os episódios mais recentes dos podcasts que você segue aparecerão "
                            "aqui."),
                          ("episodes-changed", "subscriptions-changed"))
+        self.mark_seen_button = Gtk.Button(icon_name="object-select-symbolic",
+                                           tooltip_text=_("Marcar tudo como visto"))
+        self.mark_seen_button.connect("clicked", lambda *_: self._mark_all_seen())
+        self.header.pack_end(self.mark_seen_button)
+
+    def rebuild(self) -> None:
+        super().rebuild()
+        new_count = sum(1 for episode in self._episodes if episode.is_new)
+        self.mark_seen_button.set_visible(new_count > 0)
+
+    def _mark_all_seen(self) -> None:
+        """Advance every show's last_seen_at in one shot, with undo via toast."""
+        marks = self.app.db.mark_all_seen()
+        if not marks:
+            return
+        window = self.window
+        if window is not None and hasattr(window, "show_undo_toast"):
+            window.show_undo_toast(_("Novidades marcadas como vistas"),
+                                   undo=lambda: self.app.db.restore_seen(marks))
 
 
 class HistoryView(EpisodeListView):

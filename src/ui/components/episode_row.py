@@ -150,8 +150,16 @@ class EpisodeRow(Gtk.ListBoxRow):
                              max_width_chars=10)
         self.title = label(episode.title, ("episode-title",), wrap=True,
                            lines=2 if compact else 3, max_width_chars=10)
+        self.title.set_hexpand(True)
+        title_box = Gtk.Box(spacing=8)
+        # Apple Podcasts' blue dot: marks episodes the show has that you have not seen yet.
+        self.new_dot = Gtk.Box(css_classes=["new-dot"], valign=Gtk.Align.START, margin_top=7,
+                               tooltip_text=_("Novo episódio"))
+        self.new_dot.set_visible(episode.is_new)
+        title_box.append(self.new_dot)
+        title_box.append(self.title)
         body.append(self.eyebrow)
-        body.append(self.title)
+        body.append(title_box)
         self.summary = label(episode.summary, ("episode-summary", "dim-label"), wrap=True,
                              lines=2, max_width_chars=10)
         self.summary.set_visible(bool(episode.summary) and not compact)
@@ -255,6 +263,7 @@ class EpisodeRow(Gtk.ListBoxRow):
             self.title.add_css_class("played")
         else:
             self.title.remove_css_class("played")
+        self.new_dot.set_visible(episode.is_new)
 
         app = get_app()
         downloading = app is not None and app.downloads.is_active(episode.id)

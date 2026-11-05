@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from .i18n import _
@@ -195,6 +197,9 @@ class PodFlowWindow(Adw.ApplicationWindow):
         add("show-section", lambda _a, v: self.show_section(v.get_string()), "s")
         add("show-chart-genre", lambda _a, v: self.show_chart_genre(v.get_int32()), "i")
         add("open-podcast", lambda _a, v: self.open_podcast(v.get_string()), "s")
+        add("mark-podcast-seen", lambda _a, v: self._mark_podcast_seen(v.get_string()), "s")
+        add("play-podcast-latest", lambda _a, v: self._play_podcast_latest(v.get_string()), "s")
+        add("unfollow-podcast", lambda _a, v: self._confirm_unfollow(v.get_string()), "s")
         add("open-current-podcast", lambda *_: self._open_current_podcast())
         add("open-now-playing", lambda *_: self.open_now_playing())
         add("close-now-playing", lambda *_: self.close_now_playing())
@@ -329,6 +334,45 @@ class PodFlowWindow(Adw.ApplicationWindow):
         else:
             self.open_now_playing()
 
+    # -- show card context menu ----------------------------------------------------------
+
+    def _mark_podcast_seen(self, podcast_id: str) -> None:
+        podcast = self.app.db.get_podcast(podcast_id)
+        if podcast is None:
+            return
+        self.app.db.mark_podcast_seen(podcast_id)
+        self.show_toast(_("Novidades de “{title}” marcadas como vistas")
+                        .format(title=podcast.title))
+
+    def _play_podcast_latest(self, podcast_id: str) -> None:
+        episode = self.app.db.latest_episode(podcast_id)
+        if episode is None:
+            self.show_toast(_("Nenhum episódio disponível ainda"))
+            return
+        self.app.playback.play_episode(episode)
+
+    def _confirm_unfollow(self, podcast_id: str) -> None:
+        podcast = self.app.db.get_podcast(podcast_id)
+        if podcast is None or not podcast.subscribed:
+            return
+        dialog = Adw.AlertDialog(
+            heading=_("Deixar de seguir “{title}”?").format(title=podcast.title),
+            body=_("Você pode seguir novamente a qualquer momento."))
+        dialog.add_response("cancel", _("Cancelar"))
+        dialog.add_response("unfollow", _("Deixar de seguir"))
+        dialog.set_response_appearance("unfollow", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_close_response("cancel")
+        dialog.connect("response", lambda _d, response: response == "unfollow"
+                       and self._unfollow(podcast_id))
+        dialog.present(self)
+
+    def _unfollow(self, podcast_id: str) -> None:
+        podcast = self.app.db.get_podcast(podcast_id)
+        if podcast is None:
+            return
+        self.app.library.set_subscribed(podcast_id, False)
+        self.show_toast(_("Você deixou de seguir {title}").format(title=podcast.title))
+
     def _focus_search(self) -> None:
         self.show_section("search")
         self._page("search").focus_entry()
@@ -351,3 +395,11 @@ class PodFlowWindow(Adw.ApplicationWindow):
     def show_toast(self, message: str, timeout: int = 3) -> None:
         self.toast_overlay.add_toast(Adw.Toast(title=GLib.markup_escape_text(message),
                                                timeout=timeout))
+
+    def show_undo_toast(self, message: str, undo: Callable[[], None],
+                        timeout: int = 6) -> None:
+        """Toast with a “Desfazer” button, for reversible bulk actions."""
+        toast = Adw.Toast(title=GLib.markup_escape_text(message), timeout=timeout)
+        toast.set_button_label(_("Desfazer"))
+        toast.connect("button-clicked", lambda _toast: undo())
+        self.toast_overlay.add_toast(toast)

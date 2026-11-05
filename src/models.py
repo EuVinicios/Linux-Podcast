@@ -83,6 +83,8 @@ class Episode:
     podcast_author: str = ""
     podcast_artwork: str = ""
     podcast_accent: str = ""
+    # Unplayed episode published after the podcast was last seen (Apple's blue dot).
+    is_new: bool = False
 
     @property
     def is_downloaded(self) -> bool:

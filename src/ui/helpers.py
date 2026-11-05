@@ -7,7 +7,7 @@ from collections.abc import Callable, Iterable
 from gi.repository import Adw, Gio, GLib, GObject, Gtk, Pango
 
 from ..i18n import _
-from ..models import Episode
+from ..models import Episode, Podcast
 
 
 def get_app():
@@ -132,6 +132,21 @@ def menu_item(label_text: str, action: str, target: str | None = None) -> Gio.Me
     else:
         item.set_action_and_target_value(action, GLib.Variant("s", target))
     return item
+
+
+def podcast_menu(podcast: Podcast) -> Gio.Menu:
+    """Context menu for a show card, like Apple Podcasts' long-press menu."""
+    menu = Gio.Menu()
+    state = Gio.Menu()
+    state.append_item(menu_item(_("Reproduzir mais recente"), "win.play-podcast-latest",
+                                 podcast.id))
+    state.append_item(menu_item(_("Marcar como visto"), "win.mark-podcast-seen", podcast.id))
+    menu.append_section(None, state)
+    links = Gio.Menu()
+    links.append_item(menu_item(_("Abrir programa"), "win.open-podcast", podcast.id))
+    links.append_item(menu_item(_("Deixar de seguir"), "win.unfollow-podcast", podcast.id))
+    menu.append_section(None, links)
+    return menu
 
 
 def episode_menu(episode: Episode, *, in_queue: bool, downloading: bool,

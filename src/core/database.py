@@ -112,7 +112,8 @@ CREATE TABLE IF NOT EXISTS sync_actions (
 
 _EPISODE_SELECT = """
 SELECT e.*, p.title AS podcast_title, p.author AS podcast_author,
-       p.artwork_url AS podcast_artwork, p.accent_color AS podcast_accent
+       p.artwork_url AS podcast_artwork, p.accent_color AS podcast_accent,
+       (e.played = 0 AND e.published > COALESCE(p.last_seen_at, p.subscribed_at, 0)) AS is_new
 FROM episodes e JOIN podcasts p ON p.id = e.podcast_id
 """
 
@@ -190,6 +191,7 @@ def _episode(row: sqlite3.Row) -> Episode:
         podcast_author=row["podcast_author"] if "podcast_author" in keys else "",
         podcast_artwork=row["podcast_artwork"] if "podcast_artwork" in keys else "",
         podcast_accent=row["podcast_accent"] if "podcast_accent" in keys else "",
+        is_new=bool(row["is_new"]) if "is_new" in keys else False,
     )
 
 
@@ -354,6 +356,26 @@ class Database(GObject.Object):
         if self._exec("UPDATE podcasts SET last_seen_at = ? WHERE id = ? AND subscribed = 1",
                       (_now(), podcast_id)):
             self._emit("subscriptions-changed")
+
+    def mark_all_seen(self) -> dict[str, int | None]:
+        """Advance ``last_seen_at`` on every followed show at once.
+
+        Returns the previous ``last_seen_at`` values keyed by podcast id so the
+        caller can offer undo via :meth:`restore_seen`."""
+        marks = {r["id"]: r["last_seen_at"] for r in self._query(
+            "SELECT id, last_seen_at FROM podcasts WHERE subscribed = 1")}
+        self._exec("UPDATE podcasts SET last_seen_at = ? WHERE subscribed = 1", (_now(),))
+        self._emit("subscriptions-changed")
+        return marks
+
+    def restore_seen(self, marks: dict[str, int | None]) -> None:
+        """Undo :meth:`mark_all_seen`, restoring the captured ``last_seen_at`` values."""
+        if not marks:
+            return
+        with self._tx() as conn:
+            conn.executemany("UPDATE podcasts SET last_seen_at = ? WHERE id = ?",
+                             [(seen, podcast_id) for podcast_id, seen in marks.items()])
+        self._emit("subscriptions-changed")
 
     def set_podcast_refreshed(self, podcast_id: str) -> None:
         self._exec("UPDATE podcasts SET last_refreshed = ? WHERE id = ?", (_now(), podcast_id))

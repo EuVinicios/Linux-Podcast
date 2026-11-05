@@ -196,6 +196,15 @@ window.compact .page-content {
   opacity: 0.62;
 }
 
+/* Apple Podcasts' blue dot: an unseen episode marker next to the title. */
+.new-dot {
+  min-width: 9px;
+  min-height: 9px;
+  border-radius: 50%;
+  background-color: var(--accent-color);
+  margin-top: 7px;
+}
+
 .episode-summary {
   font-size: 0.93em;
 }

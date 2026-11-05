@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from gi.repository import Gtk
+from gi.repository import Gdk, Gtk
 
 from ...i18n import _
 from ...models import Episode
@@ -21,10 +21,12 @@ class PodcastCard(Gtk.Box):
     def __init__(self, title: str, subtitle: str, artwork_url: str, accent: str = "",
                  size: int = 160, on_activate: Callable[[], None] | None = None,
                  on_play: Callable[[], None] | None = None, badge: int = 0,
-                 rank: int | None = None):
+                 rank: int | None = None,
+                 on_context: Callable[[Gtk.Widget, float, float], None] | None = None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, css_classes=["podcast-card"],
                          halign=Gtk.Align.START, valign=Gtk.Align.START)
         self._on_activate = on_activate
+        self._on_context = on_context
         overlay = Gtk.Overlay()
         self.append(overlay)
 
@@ -65,6 +67,18 @@ class PodcastCard(Gtk.Box):
             pill.set_tooltip_text(_("Episódios novos"))
             pill.set_can_target(False)
             overlay.add_overlay(pill)
+
+        if on_context is not None:
+            # Right click opens the card menu, like Apple Podcasts' long press.
+            right_click = Gtk.GestureClick()
+            right_click.set_button(Gdk.BUTTON_SECONDARY)
+            right_click.connect("pressed", self._on_right_click)
+            self.add_controller(right_click)
+
+    def _on_right_click(self, _gesture: Gtk.GestureClick, _n_press: int,
+                        x: float, y: float) -> None:
+        if self._on_context is not None:
+            self._on_context(self, x, y)
 
 
 class EpisodeCard(Gtk.Button):
