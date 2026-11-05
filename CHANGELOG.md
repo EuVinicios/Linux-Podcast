@@ -4,6 +4,26 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.6.0] - 2026-11-04
+
+### Adicionado
+
+- **Ponto azul de episódios novos** (inspirado no Apple Podcasts): episódios não ouvidos
+  publicados depois da última visita ao programa ganham o indicador na cor de destaque, ao lado
+  do título, em toda a lista de episódios.
+- **Menu de contexto nos cards de programas**: botão direito no card da Biblioteca ou da
+  prateleira "Seus Programas" (ou toque longo em touchscreens) abre *Reproduzir mais recente*,
+  *Marcar como visto*, *Abrir programa* e *Deixar de seguir* — sem precisar abrir a página do
+  programa.
+- **Botão "Marcar tudo como visto"** na Biblioteca → Últimos Episódios: limpa os selos de
+  novidade de todos os programas de uma vez, com botão *Desfazer* na notificação. Programas sem
+  novidades escondem o botão.
+
+### Alterado
+
+- O ponto azul desaparece com uma animação suave de esmaecimento ao ouvir o episódio, em vez de
+  sumir instantaneamente.
+
 ## [0.5.0] - 2026-10-29
 
 ### Adicionado

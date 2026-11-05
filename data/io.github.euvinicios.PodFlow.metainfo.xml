@@ -107,6 +107,16 @@
   </screenshots>
 
   <releases>
+    <release version="0.6.0" date="2026-11-04">
+      <description>
+        <p>New-episode indicators and context menus, like Apple Podcasts.</p>
+        <ul>
+          <li>Blue dot marks unseen episodes of the shows you follow; it fades away smoothly when you listen</li>
+          <li>Right-click or long press on a show card to play the latest, mark as seen, open or unfollow</li>
+          <li>“Mark all as seen” in Latest Episodes clears every show's new-episode count at once, with undo</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.5.0" date="2026-10-29">
       <description>
         <p>Full-screen Now Playing sheet inspired by Apple Podcasts.</p>
