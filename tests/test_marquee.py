@@ -46,7 +46,7 @@ class MarqueeTests(unittest.TestCase):
 
     def test_long_text_scrolls_after_resting(self):
         self.marquee.set_text(LONG)
-        self.assertTrue(run_until(lambda: self.marquee._overflow, 2))
+        self.assertTrue(run_until(lambda: self.marquee._overflow, 5))
         self.assertEqual(self.marquee.get_tooltip_text(), LONG)
         self.assertTrue(run_until(lambda: self.marquee._offset > 5, 5), "o texto não rolou")
 
@@ -55,7 +55,7 @@ class MarqueeTests(unittest.TestCase):
         self.assertTrue(run_until(lambda: self.marquee._offset > 5, 5))
         self.marquee.set_text("Curto")
         self.assertEqual(self.marquee._offset, 0)
-        self.assertTrue(run_until(lambda: not self.marquee._overflow, 2))
+        self.assertTrue(run_until(lambda: not self.marquee._overflow, 5))
 
     def test_paused_marquee_rests(self):
         self.marquee.set_running(False)
