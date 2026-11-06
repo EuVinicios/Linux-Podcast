@@ -107,6 +107,16 @@
   </screenshots>
 
   <releases>
+    <release version="0.6.2" date="2026-11-05">
+      <description>
+        <p>Bug fix release for new-episode notifications and context menus.</p>
+        <ul>
+          <li>Right-click and long-press context menus on episode rows with "Mark as seen" option</li>
+          <li>Instant reactive update and smooth fade animation for new-episode blue dots across all views</li>
+          <li>Fix new-episode queries to only flag episodes of followed podcasts</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.1" date="2026-11-05">
       <description>
         <p>Bug fix release.</p>

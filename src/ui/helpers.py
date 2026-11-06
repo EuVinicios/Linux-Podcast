@@ -172,6 +172,8 @@ def episode_menu(episode: Episode, *, in_queue: bool, downloading: bool,
     menu.append_section(None, queue)
 
     state = Gio.Menu()
+    if episode.is_new:
+        state.append_item(menu_item(_("Marcar como visto"), "app.mark-seen", episode.id))
     if episode.played:
         state.append_item(menu_item(_("Marcar como não ouvido"), "app.mark-unplayed", episode.id))
     else:

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 
-from gi.repository import GLib, Graphene, Gsk, Gtk
+from gi.repository import Gdk, GLib, Graphene, Gsk, Gtk
 
 from ...core.player import PlayerState
 from ...i18n import _
@@ -194,6 +194,15 @@ class EpisodeRow(Gtk.ListBoxRow):
         body.append(controls)
         outer.append(body)
         self.set_child(outer)
+
+        right_click = Gtk.GestureClick()
+        right_click.set_button(Gdk.BUTTON_SECONDARY)
+        right_click.connect("pressed", self._on_right_click)
+        self.add_controller(right_click)
+        long_press = Gtk.GestureLongPress(touch_only=True)
+        long_press.connect("pressed", self._on_long_press)
+        self.add_controller(long_press)
+
         self._refresh()
 
     # -- lifecycle -------------------------------------------------------------------
@@ -205,6 +214,8 @@ class EpisodeRow(Gtk.ListBoxRow):
             return
         self._handlers = [
             (app.db, app.db.connect("episode-changed", self._on_episode_changed)),
+            (app.db, app.db.connect("episodes-changed", self._on_episodes_changed)),
+            (app.db, app.db.connect("subscriptions-changed", self._on_subscriptions_changed)),
             (app.playback, app.playback.connect("episode-changed", lambda *_: self._refresh_play())),
             (app.playback, app.playback.connect("state-changed", lambda *_: self._refresh_play())),
             (app.playback, app.playback.connect("position-changed", self._on_position)),
@@ -231,6 +242,41 @@ class EpisodeRow(Gtk.ListBoxRow):
         if fresh is not None:
             self.episode = fresh
             self._refresh()
+
+    def _on_episodes_changed(self, db, podcast_id: str) -> None:
+        if podcast_id == self.episode.podcast_id:
+            fresh = db.get_episode(self.episode.id)
+            if fresh is not None:
+                self.episode = fresh
+                self._refresh()
+
+    def _on_subscriptions_changed(self, db) -> None:
+        fresh = db.get_episode(self.episode.id)
+        if fresh is not None:
+            self.episode = fresh
+            self._refresh()
+
+    def _show_context_menu(self, x: float, y: float) -> None:
+        app = get_app()
+        if app is None:
+            return
+        menu = episode_menu(self.episode, in_queue=app.db.in_queue(self.episode.id),
+                            downloading=app.downloads.is_active(self.episode.id),
+                            show_podcast=self._show_podcast)
+        popover = Gtk.PopoverMenu(menu_model=menu, has_arrow=False)
+        popover.set_parent(self)
+        rect = Gdk.Rectangle()
+        rect.x, rect.y, rect.width, rect.height = int(x), int(y), 1, 1
+        popover.set_pointing_to(rect)
+        popover.connect("closed", lambda p: p.unparent())
+        popover.popup()
+
+    def _on_right_click(self, _gesture: Gtk.GestureClick, _n_press: int,
+                        x: float, y: float) -> None:
+        self._show_context_menu(x, y)
+
+    def _on_long_press(self, _gesture: Gtk.GestureLongPress, x: float, y: float) -> None:
+        self._show_context_menu(x, y)
 
     def _on_download_progress(self, _downloads, episode_id: str, fraction: float) -> None:
         if episode_id == self.episode.id:

@@ -170,6 +170,7 @@ class PodcastDetailPage(ViewPage):
             return
         self._handlers = [
             (app.db, app.db.connect("episodes-changed", self._on_episodes_changed)),
+            (app.db, app.db.connect("subscriptions-changed", self._on_subscriptions_changed)),
             (app.db, app.db.connect("podcast-changed", self._on_podcast_changed)),
             (app.db, app.db.connect("episode-changed", self._on_episode_changed)),
             (app.library, app.library.connect("refresh-started", self._on_refresh_started)),
@@ -397,6 +398,11 @@ class PodcastDetailPage(ViewPage):
         if podcast_id == self.podcast_id:
             self._update_header()
             self._reload_list(keep=self._loaded)
+
+    def _on_subscriptions_changed(self, _db) -> None:
+        self.podcast = self.app.db.get_podcast(self.podcast_id)
+        self._update_header()
+        self._reload_list(keep=self._loaded)
 
     def _on_episode_changed(self, db, episode_id: str) -> None:
         episode = db.get_episode(episode_id)

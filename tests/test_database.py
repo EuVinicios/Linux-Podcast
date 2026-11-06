@@ -136,15 +136,43 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(self.db.queue_ids(), [])
 
     def test_new_episode_badge(self):
-        self.db.set_subscribed("feed:abc", True)
-        self.assertEqual(self.db.get_podcast("feed:abc").new_count, 0)
+        # Unsubscribed show should never have is_new or new_count
         fresh = episode("feed:abc", "fresh", "Recém-saído", int(time.time()) + 60)
         self.db.upsert_episodes("feed:abc", [fresh])
+        self.assertEqual(self.db.get_podcast("feed:abc").new_count, 0)
+        self.assertFalse(self.db.get_episode(fresh.id).is_new)
+
+        self.db.set_subscribed("feed:abc", True)
         self.assertEqual(self.db.get_podcast("feed:abc").new_count, 1)
+        self.assertTrue(self.db.get_episode(fresh.id).is_new)
         self.assertIn(fresh.id, [e.id for e in self.db.list_new_episodes()])
+
+        signals = []
+        self.db.connect("episodes-changed", lambda _db, pid: signals.append(("episodes", pid)))
+        self.db.connect("subscriptions-changed", lambda _db: signals.append(("subscriptions",)))
         self.db.mark_podcast_seen("feed:abc")
         time.sleep(0.01)
         self.assertEqual(self.db.get_podcast("feed:abc").new_count, 0)
+        self.assertFalse(self.db.get_episode(fresh.id).is_new)
+        self.assertIn(("episodes", "feed:abc"), signals)
+        self.assertIn(("subscriptions",), signals)
+
+    def test_mark_episode_seen(self):
+        self.db.set_subscribed("feed:abc", True)
+        fresh = episode("feed:abc", "fresh2", "Recém-saído 2", int(time.time()) + 120)
+        self.db.upsert_episodes("feed:abc", [fresh])
+        self.assertTrue(self.db.get_episode(fresh.id).is_new)
+
+        signals = []
+        self.db.connect("episode-changed", lambda _db, eid: signals.append(("episode", eid)))
+        self.db.connect("episodes-changed", lambda _db, pid: signals.append(("episodes", pid)))
+        self.db.connect("subscriptions-changed", lambda _db: signals.append(("subscriptions",)))
+        self.db.mark_episode_seen(fresh.id)
+        self.assertFalse(self.db.get_episode(fresh.id).is_new)
+        self.assertEqual(self.db.get_podcast("feed:abc").new_count, 0)
+        self.assertIn(("episode", fresh.id), signals)
+        self.assertIn(("episodes", "feed:abc"), signals)
+        self.assertIn(("subscriptions",), signals)
 
     def test_mark_all_played(self):
         self.db.set_subscribed("feed:abc", True)

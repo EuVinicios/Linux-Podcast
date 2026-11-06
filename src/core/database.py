@@ -113,14 +113,16 @@ CREATE TABLE IF NOT EXISTS sync_actions (
 _EPISODE_SELECT = """
 SELECT e.*, p.title AS podcast_title, p.author AS podcast_author,
        p.artwork_url AS podcast_artwork, p.accent_color AS podcast_accent,
-       (e.played = 0 AND e.published > COALESCE(p.last_seen_at, p.subscribed_at, 0)) AS is_new
+       (p.subscribed = 1 AND e.played = 0 AND e.published > COALESCE(p.last_seen_at, p.subscribed_at, 0)) AS is_new
 FROM episodes e JOIN podcasts p ON p.id = e.podcast_id
 """
 
 _NEW_COUNT = """
-(SELECT COUNT(*) FROM episodes e
-  WHERE e.podcast_id = p.id AND e.played = 0
-    AND e.published > COALESCE(p.last_seen_at, p.subscribed_at, 0)) AS new_count
+(CASE WHEN p.subscribed = 1 THEN
+  (SELECT COUNT(*) FROM episodes e
+    WHERE e.podcast_id = p.id AND e.played = 0
+      AND e.published > COALESCE(p.last_seen_at, p.subscribed_at, 0))
+ ELSE 0 END) AS new_count
 """
 
 # Non-empty incoming values win; empty ones keep what is stored.
@@ -360,7 +362,21 @@ class Database(GObject.Object):
             ") WHERE id = ? AND subscribed = 1",
             (now, podcast_id, podcast_id),
         ):
+            self._emit("episodes-changed", podcast_id)
             self._emit("subscriptions-changed")
+
+    def mark_episode_seen(self, episode_id: str) -> None:
+        episode = self.get_episode(episode_id)
+        if episode is None:
+            return
+        self._exec(
+            "UPDATE podcasts SET last_seen_at = MAX(COALESCE(last_seen_at, 0), ?) "
+            "WHERE id = ? AND subscribed = 1",
+            (episode.published, episode.podcast_id),
+        )
+        self._emit("episode-changed", episode_id)
+        self._emit("episodes-changed", episode.podcast_id)
+        self._emit("subscriptions-changed")
 
     def mark_all_seen(self) -> dict[str, int | None]:
         """Advance ``last_seen_at`` on every followed show at once.
@@ -556,14 +572,21 @@ class Database(GObject.Object):
     def mark_all_played(self, podcast_id: str) -> None:
         ids = [r["id"] for r in self._query(
             "SELECT id FROM episodes WHERE podcast_id = ? AND played = 0", (podcast_id,))]
+        now = _now()
         self._exec("UPDATE episodes SET played = 1, played_at = ?, position = 0 "
-                   "WHERE podcast_id = ? AND played = 0", (_now(), podcast_id))
-        self._exec("UPDATE podcasts SET last_seen_at = ? WHERE id = ? AND subscribed = 1",
-                   (_now(), podcast_id))
+                   "WHERE podcast_id = ? AND played = 0", (now, podcast_id))
+        self._exec(
+            "UPDATE podcasts SET last_seen_at = ("
+            "  SELECT MAX(?, COALESCE(MAX(published), 0)) FROM episodes WHERE podcast_id = ?"
+            ") WHERE id = ? AND subscribed = 1",
+            (now, podcast_id, podcast_id),
+        )
         for episode_id in ids if self.sync_recording else ():
             row = self._one("SELECT duration FROM episodes WHERE id = ?", (episode_id,))
             if row and row["duration"]:
                 self.sync_record(episode_id, "play", 0, row["duration"], row["duration"])
+        for episode_id in ids:
+            self._emit("episode-changed", episode_id)
         self._emit("episodes-changed", podcast_id)
         self._emit("subscriptions-changed")
 

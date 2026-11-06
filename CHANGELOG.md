@@ -4,6 +4,16 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.6.2] - 2026-11-05
+
+### Corrigido
+
+- **Indicador de episódio novo (ponto azul) e menu de contexto nos episódios**:
+  - Adicionado suporte a clique com botão direito e toque longo diretamente nas linhas de episódios (`EpisodeRow`).
+  - Adicionada opção *Marcar como visto* no menu de contexto do episódio quando ele é novo.
+  - Atualização reativa imediata dos episódios em exibição (`EpisodeRow`, `LatestEpisodesView` e `PodcastDetailPage`) ao marcar podcasts ou episódios como vistos, com animação de dissolução do ponto azul sem necessidade de recarregar a tela.
+  - Corrigida consulta SQL de episódios novos para considerar apenas podcasts seguidos, evitando falsos positivos em programas não inscritos.
+
 ## [0.6.1] - 2026-11-05
 
 ### Corrigido

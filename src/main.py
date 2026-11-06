@@ -166,6 +166,7 @@ class PodFlowApplication(Adw.Application):
             "enqueue": self._enqueue,
             "dequeue": lambda e: self.db.queue_remove(e.id),
             "toggle-saved": self._toggle_saved,
+            "mark-seen": lambda e: self.db.mark_episode_seen(e.id),
             "mark-played": lambda e: self.db.set_played(e.id, True),
             "mark-unplayed": lambda e: self.db.set_played(e.id, False),
             "download": self._download,
