@@ -4,6 +4,15 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.6.3] - 2026-11-06
+
+### Corrigido
+
+- **Ativação de ações nos menus de contexto (popovers)**:
+  - Corrigido fechamento prematuro do popover que impedia a ativação das ações ao clicar nas opções do menu de contexto (como *Marcar como visto*, *Reproduzir mais recente*, etc.) nos cards de programas e nas linhas de episódios.
+  - O desanexamento do popover (`p.unparent()`) agora ocorre de forma assíncrona via `GLib.idle_add`, permitindo que o GTK 4 despache a ação correspondente para a janela com sucesso.
+  - Otimizada emissão de sinais em lote para evitar travamentos ao marcar programas com grande volume de episódios.
+
 ## [0.6.2] - 2026-11-05
 
 ### Corrigido

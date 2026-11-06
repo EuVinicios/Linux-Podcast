@@ -352,8 +352,9 @@ class PodFlowWindow(Adw.ApplicationWindow):
             if prev_seen is not None:
                 self.app.db._exec("UPDATE podcasts SET last_seen_at = ? WHERE id = ?",
                                   (prev_seen, podcast_id))
-            for eid in unplayed_ids:
-                self.app.db._emit("episode-changed", eid)
+            if len(unplayed_ids) <= 50:
+                for eid in unplayed_ids:
+                    self.app.db._emit("episode-changed", eid)
             self.app.db._emit("episodes-changed", podcast_id)
             self.app.db._emit("subscriptions-changed")
 

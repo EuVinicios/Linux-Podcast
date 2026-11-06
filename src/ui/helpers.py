@@ -151,12 +151,13 @@ def podcast_menu(podcast: Podcast) -> Gio.Menu:
 
 def show_card_menu(podcast: Podcast, card: Gtk.Widget, x: float, y: float) -> None:
     """Open the show card menu at the pointer, used by right click and long press."""
-    popover = Gtk.PopoverMenu(menu_model=podcast_menu(podcast), has_arrow=False)
+    popover = Gtk.PopoverMenu.new_from_model(podcast_menu(podcast))
+    popover.set_has_arrow(False)
     popover.set_parent(card)
     rect = Gdk.Rectangle()
     rect.x, rect.y, rect.width, rect.height = int(x), int(y), 1, 1
     popover.set_pointing_to(rect)
-    popover.connect("closed", lambda p: p.unparent())
+    popover.connect("closed", lambda p: GLib.idle_add(p.unparent))
     popover.popup()
 
 

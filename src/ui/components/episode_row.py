@@ -263,12 +263,13 @@ class EpisodeRow(Gtk.ListBoxRow):
         menu = episode_menu(self.episode, in_queue=app.db.in_queue(self.episode.id),
                             downloading=app.downloads.is_active(self.episode.id),
                             show_podcast=self._show_podcast)
-        popover = Gtk.PopoverMenu(menu_model=menu, has_arrow=False)
+        popover = Gtk.PopoverMenu.new_from_model(menu)
+        popover.set_has_arrow(False)
         popover.set_parent(self)
         rect = Gdk.Rectangle()
         rect.x, rect.y, rect.width, rect.height = int(x), int(y), 1, 1
         popover.set_pointing_to(rect)
-        popover.connect("closed", lambda p: p.unparent())
+        popover.connect("closed", lambda p: GLib.idle_add(p.unparent))
         popover.popup()
 
     def _on_right_click(self, _gesture: Gtk.GestureClick, _n_press: int,

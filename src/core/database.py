@@ -585,8 +585,9 @@ class Database(GObject.Object):
             row = self._one("SELECT duration FROM episodes WHERE id = ?", (episode_id,))
             if row and row["duration"]:
                 self.sync_record(episode_id, "play", 0, row["duration"], row["duration"])
-        for episode_id in ids:
-            self._emit("episode-changed", episode_id)
+        if len(ids) <= 50:
+            for episode_id in ids:
+                self._emit("episode-changed", episode_id)
         self._emit("episodes-changed", podcast_id)
         self._emit("subscriptions-changed")
 
