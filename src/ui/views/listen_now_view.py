@@ -11,7 +11,7 @@ from ..components.shelf import Shelf
 from ..helpers import clear, label, page_box, scrolled_page, section_header, show_card_menu
 from .base import ViewPage
 
-NEW_EPISODES_LIMIT = 30
+NEW_EPISODES_LIMIT = 50
 
 
 class ListenNowView(ViewPage):
@@ -70,7 +70,7 @@ class ListenNowView(ViewPage):
             self.content.append(section)
 
         subscriptions = db.list_subscriptions()
-        new_episodes = db.list_new_episodes(days=21, limit=NEW_EPISODES_LIMIT)
+        new_episodes = db.list_new_episodes(days=30, limit=NEW_EPISODES_LIMIT)
         if new_episodes:
             section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
             section.append(section_header(_("Novos Episódios"),
@@ -115,6 +115,9 @@ class ListenNowView(ViewPage):
         super().set_compact(compact)
         if changed:
             self.schedule_rebuild(50)
+
+    def on_shown(self) -> None:
+        self.schedule_rebuild(50)
 
     def _episode_list(self) -> Gtk.ListBox:
         listbox = Gtk.ListBox(css_classes=["boxed-list", "episode-list"],

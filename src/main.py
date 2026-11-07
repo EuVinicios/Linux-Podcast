@@ -93,6 +93,8 @@ class PodFlowApplication(Adw.Application):
             from .window import PodFlowWindow
             self.window = PodFlowWindow(self)
             self.playback.restore_session()
+            if self.db.get_setting("now_playing_open", False) and self.playback.current is not None:
+                self.window.open_now_playing()
             GLib.timeout_add_seconds(1, self._initial_refresh)
             GLib.timeout_add_seconds(1200, self._periodic_refresh)
             self.sync.start()
@@ -108,6 +110,8 @@ class PodFlowApplication(Adw.Application):
 
     def do_shutdown(self) -> None:
         try:
+            if self.window is not None:
+                self.window._on_close_request()
             if self.sync is not None:
                 self.sync.stop()
             if self.mpris is not None:

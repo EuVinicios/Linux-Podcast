@@ -208,6 +208,31 @@ class DatabaseTests(unittest.TestCase):
         podcasts, _ = self.db.search_local("nerd")
         self.assertIn("NerdCast", [p.title for p in podcasts])
 
+    def test_save_progress_updates_last_played_and_in_progress(self):
+        first, second = self.episodes[0].id, self.episodes[1].id
+        now = int(time.time())
+        self.db.save_progress(first, 30, 1800)
+        self.db._exec("UPDATE episodes SET last_played_at = ? WHERE id = ?", (now - 100, first))
+        self.db.save_progress(second, 45, 1800)
+        in_progress = self.db.list_in_progress()
+        self.assertEqual([e.id for e in in_progress[:2]], [second, first])
+        # Listening further to first now updates its last_played_at to now
+        self.db.save_progress(first, 60, 1800)
+        self.db._exec("UPDATE episodes SET last_played_at = ? WHERE id = ?", (now + 10, first))
+        in_progress = self.db.list_in_progress()
+        self.assertEqual(in_progress[0].id, first)
+
+    def test_list_new_episodes_includes_unseen_older_episodes(self):
+        self.db.set_subscribed("feed:abc", True)
+        old_seen = int(time.time()) - 40 * 86400
+        self.db._exec("UPDATE podcasts SET last_seen_at = ? WHERE id = 'feed:abc'", (old_seen,))
+        # Episode published 35 days ago (older than days=30 window), but newer than last_seen_at
+        older_fresh = episode("feed:abc", "older_fresh", "Novo Antigo", int(time.time()) - 35 * 86400)
+        self.db.upsert_episodes("feed:abc", [older_fresh])
+        self.assertTrue(self.db.get_episode(older_fresh.id).is_new)
+        new_episodes = self.db.list_new_episodes(days=30)
+        self.assertIn(older_fresh.id, [e.id for e in new_episodes])
+
 
 if __name__ == "__main__":
     unittest.main()

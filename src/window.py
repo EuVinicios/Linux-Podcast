@@ -261,6 +261,9 @@ class PodFlowWindow(Adw.ApplicationWindow):
             width, height = self.get_default_size()
             db.set_setting("window_size", [width, height])
         db.set_setting("window_maximized", self.is_maximized())
+        db.set_setting("now_playing_open", self.now_playing_sheet.get_open())
+        if self.app.playback is not None:
+            self.app.playback._save_progress(final=True)
         return False
 
     # -- navigation ------------------------------------------------------------------

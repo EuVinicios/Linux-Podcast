@@ -147,6 +147,23 @@ class PlaybackManagerTests(unittest.TestCase):
         self.manager.set_volume(0.4)
         self.assertTrue(run_until(lambda: self.db.get_setting("volume") == 0.4, 2))
 
+    def test_save_progress_emits_history_changed_and_preserves_positive_position(self):
+        first = self.episodes[0]
+        history_signals = []
+        self.db.connect("history-changed", lambda *_: history_signals.append("history"))
+        self.manager.current = first
+        self.manager._needs_load = False
+        self.manager.player._position = 100.0
+        self.manager._save_progress(record=True)
+        self.assertIn("history", history_signals)
+        self.assertEqual(self.db.get_episode(first.id).position, 100.0)
+        self.assertEqual(self.db.get_setting("last_episode"), first.id)
+
+        # Position <= 0 with final=True should NOT overwrite positive position
+        self.manager.player._position = 0.0
+        self.manager._save_progress(final=True)
+        self.assertEqual(self.db.get_episode(first.id).position, 100.0)
+
 
 if __name__ == "__main__":
     unittest.main()

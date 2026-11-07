@@ -502,9 +502,10 @@ class Database(GObject.Object):
                            "ORDER BY e.published DESC LIMIT ?", (limit,))
         return [_episode(r) for r in rows]
 
-    def list_new_episodes(self, days: int = 21, limit: int = 40) -> list[Episode]:
+    def list_new_episodes(self, days: int = 30, limit: int = 60) -> list[Episode]:
         rows = self._query(_EPISODE_SELECT + " WHERE p.subscribed = 1 AND e.played = 0 "
-                           "AND e.published >= ? ORDER BY e.published DESC LIMIT ?",
+                           "AND (e.published >= ? OR e.published > COALESCE(p.last_seen_at, p.subscribed_at, 0)) "
+                           "ORDER BY e.published DESC LIMIT ?",
                            (_now() - days * 86400, limit))
         return [_episode(r) for r in rows]
 
@@ -535,9 +536,12 @@ class Database(GObject.Object):
     # -- playback state --------------------------------------------------------------
 
     def save_progress(self, episode_id: str, position: float, duration: float = 0) -> None:
+        now = _now()
+        pos = max(0.0, position)
         self._exec("UPDATE episodes SET position = ?, "
-                   "duration = CASE WHEN ? > 0 AND duration = 0 THEN ? ELSE duration END "
-                   "WHERE id = ?", (max(0.0, position), int(duration), int(duration), episode_id))
+                   "duration = CASE WHEN ? > 0 AND duration = 0 THEN ? ELSE duration END, "
+                   "last_played_at = CASE WHEN ? >= 15 THEN ? ELSE last_played_at END "
+                   "WHERE id = ?", (pos, int(duration), int(duration), pos, now, episode_id))
         self._emit("episode-changed", episode_id)
 
     def mark_started(self, episode_id: str) -> None:

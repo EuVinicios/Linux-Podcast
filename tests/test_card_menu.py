@@ -132,6 +132,40 @@ class CardMenuTests(unittest.TestCase):
         app.run([])
         self.assertEqual(calls, [("seen", "ep:1")])
 
+    def test_window_close_saves_now_playing_and_progress(self):
+        from src.models import Episode
+        from src.window import PodFlowWindow
+
+        settings = {}
+        saved = []
+
+        class MockDB:
+            def get_setting(self, k, default=None): return settings.get(k, default)
+            def set_setting(self, k, v): settings[k] = v
+
+        class MockPlayback:
+            def __init__(self):
+                self.current = Episode(id="ep1", podcast_id="p1", title="E1")
+            def _save_progress(self, final=False):
+                saved.append(final)
+
+        class MockSheet:
+            def get_open(self): return True
+
+        class DummyWin:
+            def __init__(self):
+                self.app = type("App", (), {"db": MockDB(), "playback": MockPlayback()})()
+                self.now_playing_sheet = MockSheet()
+            def is_maximized(self): return False
+            def get_default_size(self): return (1200, 800)
+
+        win = DummyWin()
+        PodFlowWindow._on_close_request(win)
+
+        self.assertTrue(settings["now_playing_open"])
+        self.assertEqual(settings["window_size"], [1200, 800])
+        self.assertEqual(saved, [True])
+
 
 if __name__ == "__main__":
     unittest.main()

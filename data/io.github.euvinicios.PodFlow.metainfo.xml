@@ -107,6 +107,16 @@
   </screenshots>
 
   <releases>
+    <release version="0.6.4" date="2026-11-07">
+      <description>
+        <p>Bug fix release for session restoration, new episode listings, and Continue Listening shelf.</p>
+        <ul>
+          <li>Restore playback position and keep the Now Playing sheet open across app restarts</li>
+          <li>Include unseen episodes in the Listen Now tab and expand recent window</li>
+          <li>Update Continue Listening shelf with the most recently played episodes and refresh on return</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.3" date="2026-11-06">
       <description>
         <p>Bug fix release for context menu action dispatching.</p>

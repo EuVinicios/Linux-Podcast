@@ -298,10 +298,13 @@ class PlaybackManager(GObject.Object):
             self.current.position = 0.0
             self._play_started = -1.0
             return
-        if position <= 0 and not final:
+        if position <= 0:
             return
         self.current.position = position
+        self.db.set_setting("last_episode", self.current.id)
         self.db.save_progress(self.current.id, position, duration)
+        if record or final:
+            self.db._emit("history-changed")
         if (record or final) and position >= 1 and self._play_started >= 0:
             self.db.sync_record(self.current.id, "play", self._play_started, position,
                                 duration if duration > 0 else -1)

@@ -4,6 +4,19 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.6.4] - 2026-11-07
+
+### Corrigido
+
+- **Restauração de sessão e reprodução**:
+  - Preserva a posição exata de reprodução ao fechar e reabrir o aplicativo, evitando que o progresso seja zerado no encerramento.
+  - Mantém a tela "Em Execução" aberta ao reiniciar o aplicativo se ela estava ativa anteriormente.
+- **Episódios novos na aba Início**:
+  - Correção na listagem de episódios novos para incluir lançamentos não visualizados mesmo com datas de publicação anteriores, além de ampliar a janela de exibição para 30 dias e até 50 episódios.
+- **Atualização da prateleira "Continuar Ouvindo"**:
+  - Atualização do registro temporal (`last_played_at`) ao reproduzir episódios, garantindo que os últimos conteúdos ouvidos apareçam ordenados no topo.
+  - Emissão de sinal reativo (`history-changed`) no salvamento de progresso e recarregamento automático ao retornar para a aba Início.
+
 ## [0.6.3] - 2026-11-06
 
 ### Corrigido
