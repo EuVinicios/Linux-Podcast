@@ -316,11 +316,11 @@ class PodFlowApplication(Adw.Application):
             support_url=f"{config.WEBSITE}#perguntas",
             release_notes_version=config.VERSION,
             release_notes=_(
-                "<p>Transcrição ao vivo, OpenRouter BYOK e Modo Estudo de Idiomas.</p><ul>"
-                "<li>Suporte nativo e gratuito a transcrições de feeds RSS (Podcasting 2.0: VTT, SRT e JSON)</li>"
-                "<li>Nova aba Preferências → IA e Transcrição (100% opcional) com conexão via OpenRouter OAuth PKCE ou chave própria no chaveiro do sistema</li>"
-                "<li>Transcrição progressiva ao vivo sob demanda com acompanhamento sincronizado palavra a palavra e clique para pular no áudio</li>"
-                "<li>Modo Estudo: tradução bilíngue, explicação contextual de expressões com IA, repetição/loop de frases, velocidade 0,5× e caderno de estudos</li></ul>"),
+                "<p>Refinamento de UX na transcrição ao vivo e nas Preferências.</p><ul>"
+                "<li>Diálogo de Preferências mais amplo (760×680) e seletores limpos sem cortes nos nomes de modelos e idiomas</li>"
+                "<li>Painel de transcrição com largura fixa confortável (460×540), rolagem animada suave e atualização incremental sem piscar</li>"
+                "<li>Quebra automática de blocos longos em frases naturais e acompanhamento linha a linha dentro de blocos altos</li>"
+                "<li>Otimização do look-ahead de transcrição ao vivo e indicador claro de “IA pausada”</li></ul>"),
         )
         about.add_link(_("Código-fonte"), config.REPOSITORY)
         about.add_link(_("Política de privacidade"), f"{config.WEBSITE}privacidade.html")

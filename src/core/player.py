@@ -230,7 +230,7 @@ class AudioPlayer(GObject.Object):
 
     def _start_polling(self) -> None:
         if not self._poll_id:
-            self._poll_id = GLib.timeout_add(250, self._poll)
+            self._poll_id = GLib.timeout_add(100, self._poll)
 
     def _stop_polling(self) -> None:
         if self._poll_id:

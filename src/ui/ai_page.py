@@ -205,7 +205,7 @@ class AIPage(Adw.PreferencesPage):
     def _build_connected(self) -> None:
         account = Adw.PreferencesGroup(title=_("Conta OpenRouter"))
         self.account_row = Adw.ActionRow(title=mask_key_hint(self.ai.key_label))
-        self.account_row.add_prefix(Gtk.Image(icon_name="emblem-ok-symbolic"))
+        self.account_row.add_prefix(Gtk.Image(icon_name="dialog-password-symbolic"))
 
         self.refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic", valign=Gtk.Align.CENTER,
                                       css_classes=["flat"], tooltip_text=_("Verificar saldo"))
@@ -217,6 +217,9 @@ class AIPage(Adw.PreferencesPage):
         disconnect_btn.connect("clicked", self._on_disconnect)
         self.account_row.add_suffix(disconnect_btn)
         account.add(self.account_row)
+        account.add(link_row(_("Chaves e créditos no OpenRouter"),
+                             "openrouter.ai/settings/keys",
+                             openrouter.KEYS_URL))
         self._add(account)
 
         if self.ai.storage == FILE:
@@ -233,16 +236,18 @@ class AIPage(Adw.PreferencesPage):
         # Transcription settings
         stt_group = Adw.PreferencesGroup(
             title=_("Transcrição ao vivo"),
-            description=_("O áudio é enviado em blocos curtos à frente do ponto de reprodução "
-                          "e fica salvo no banco local para não transcrever duas vezes."))
+            description=_("O áudio é enviado em blocos curtos à frente da reprodução e salvo no "
+                          "cache local para nunca transcrever o mesmo trecho duas vezes."))
 
         stt_ids = [m[0] for m in openrouter.STT_MODELS] + [_CUSTOM]
-        stt_labels = [f"{m[1]} — {m[2]}" for m in openrouter.STT_MODELS] + [_("Modelo personalizado…")]
+        stt_labels = [m[1] for m in openrouter.STT_MODELS] + [_("Personalizado…")]
+        self._stt_descs = {m[0]: m[2] for m in openrouter.STT_MODELS}
         self.stt_combo = Adw.ComboRow(title=_("Modelo de transcrição"),
                                       model=Gtk.StringList.new(stt_labels))
         cur_stt = self.ai.stt_model
         stt_idx = stt_ids.index(cur_stt) if cur_stt in stt_ids else len(stt_ids) - 1
         self.stt_combo.set_selected(stt_idx)
+        self._update_stt_subtitle(stt_ids[stt_idx])
         self.stt_combo.connect("notify::selected", self._on_stt_model_selected, stt_ids)
         stt_group.add(self.stt_combo)
 
@@ -254,8 +259,8 @@ class AIPage(Adw.PreferencesPage):
 
         src_codes = [c for c, _l in openrouter.SOURCE_LANGUAGES]
         src_labels = [_(lbl) for _c, lbl in openrouter.SOURCE_LANGUAGES]
-        src_row = Adw.ComboRow(title=_("Idioma principal do áudio"),
-                               subtitle=_("Definir Inglês melhora a precisão e velocidade em podcasts em inglês"),
+        src_row = Adw.ComboRow(title=_("Idioma do áudio"),
+                               subtitle=_("Melhora a precisão e a velocidade do reconhecimento"),
                                model=Gtk.StringList.new(src_labels))
         cur_src = self.ai.source_language
         src_row.set_selected(src_codes.index(cur_src) if cur_src in src_codes else 0)
@@ -265,7 +270,7 @@ class AIPage(Adw.PreferencesPage):
         stt_group.add(src_row)
 
         auto_row = Adw.SwitchRow(
-            title=_("Transcrever automaticamente ao reproduzir"),
+            title=_("Transcrever automaticamente"),
             subtitle=_("Desativado por padrão para evitar consumo inesperado de créditos"),
             active=self.ai.auto_transcribe)
         auto_row.connect("notify::active",
@@ -279,12 +284,14 @@ class AIPage(Adw.PreferencesPage):
             description=_("Usado para tradução bilíngue e explicação de gírias e expressões."))
 
         study_ids = [m[0] for m in openrouter.STUDY_MODELS] + [_CUSTOM]
-        study_labels = [f"{m[1]} — {m[2]}" for m in openrouter.STUDY_MODELS] + [_("Modelo personalizado…")]
-        self.study_combo = Adw.ComboRow(title=_("Modelo de estudo e tradução"),
+        study_labels = [m[1] for m in openrouter.STUDY_MODELS] + [_("Personalizado…")]
+        self._study_descs = {m[0]: m[2] for m in openrouter.STUDY_MODELS}
+        self.study_combo = Adw.ComboRow(title=_("Modelo de estudo"),
                                         model=Gtk.StringList.new(study_labels))
         cur_study = self.ai.study_model
         study_idx = study_ids.index(cur_study) if cur_study in study_ids else len(study_ids) - 1
         self.study_combo.set_selected(study_idx)
+        self._update_study_subtitle(study_ids[study_idx])
         self.study_combo.connect("notify::selected", self._on_study_model_selected, study_ids)
         study_group.add(self.study_combo)
 
@@ -296,7 +303,8 @@ class AIPage(Adw.PreferencesPage):
 
         tgt_codes = [c for c, _l in openrouter.TARGET_LANGUAGES]
         tgt_labels = [lbl for _c, lbl in openrouter.TARGET_LANGUAGES]
-        tgt_row = Adw.ComboRow(title=_("Idioma da tradução e explicações"),
+        tgt_row = Adw.ComboRow(title=_("Idioma da tradução"),
+                               subtitle=_("Usado nas legendas bilíngues e explicações"),
                                model=Gtk.StringList.new(tgt_labels))
         cur_tgt = self.ai.target_language
         tgt_row.set_selected(tgt_codes.index(cur_tgt) if cur_tgt in tgt_codes else 0)
@@ -306,7 +314,7 @@ class AIPage(Adw.PreferencesPage):
         study_group.add(tgt_row)
 
         bilingual_row = Adw.SwitchRow(
-            title=_("Ativar modo bilíngue por padrão"),
+            title=_("Modo bilíngue por padrão"),
             subtitle=_("Exibe a tradução abaixo de cada frase na transcrição"),
             active=self.ai.bilingual_default)
         bilingual_row.connect("notify::active",
@@ -316,21 +324,17 @@ class AIPage(Adw.PreferencesPage):
 
         # Usage & Cache
         usage_group = Adw.PreferencesGroup(title=_("Uso e cache"))
-        self.usage_row = Adw.ActionRow(title=_("Consumo estimado no PodFlow"))
+        self.usage_row = Adw.ActionRow(title=_("Consumo estimado"))
         reset_btn = Gtk.Button(label=_("Zerar"), valign=Gtk.Align.CENTER)
         reset_btn.connect("clicked", self._on_reset_usage)
         self.usage_row.add_suffix(reset_btn)
         usage_group.add(self.usage_row)
 
-        self.cache_row = Adw.ActionRow(title=_("Transcrições salvas localmente"))
+        self.cache_row = Adw.ActionRow(title=_("Cache de transcrições"))
         clear_btn = Gtk.Button(label=_("Limpar"), valign=Gtk.Align.CENTER)
         clear_btn.connect("clicked", self._on_clear_transcripts)
         self.cache_row.add_suffix(clear_btn)
         usage_group.add(self.cache_row)
-
-        usage_group.add(link_row(_("Gerenciar chaves e créditos no OpenRouter"),
-                                 "openrouter.ai/settings/keys",
-                                 openrouter.KEYS_URL))
         self._add(usage_group)
 
         self._update_account_subtitle()
@@ -365,10 +369,23 @@ class AIPage(Adw.PreferencesPage):
         self.cache_row.set_subtitle(
             _("{n} episódios em cache").format(n=count) if count != 1 else _("1 episódio em cache"))
 
+    def _update_stt_subtitle(self, model_id: str) -> None:
+        if model_id == _CUSTOM:
+            self.stt_combo.set_subtitle(_("Informe o identificador do modelo abaixo"))
+        else:
+            self.stt_combo.set_subtitle(self._stt_descs.get(model_id, ""))
+
+    def _update_study_subtitle(self, model_id: str) -> None:
+        if model_id == _CUSTOM:
+            self.study_combo.set_subtitle(_("Informe o identificador do modelo abaixo"))
+        else:
+            self.study_combo.set_subtitle(self._study_descs.get(model_id, ""))
+
     def _on_stt_model_selected(self, row: Adw.ComboRow, _pspec, ids: list[str]) -> None:
         selected = ids[row.get_selected()]
         is_custom = selected == _CUSTOM
         self.stt_custom_row.set_visible(is_custom)
+        self._update_stt_subtitle(selected)
         if not is_custom:
             self.ai.stt_model = selected
             self.stt_custom_row.set_text(selected)
@@ -382,6 +399,7 @@ class AIPage(Adw.PreferencesPage):
         selected = ids[row.get_selected()]
         is_custom = selected == _CUSTOM
         self.study_custom_row.set_visible(is_custom)
+        self._update_study_subtitle(selected)
         if not is_custom:
             self.ai.study_model = selected
             self.study_custom_row.set_text(selected)

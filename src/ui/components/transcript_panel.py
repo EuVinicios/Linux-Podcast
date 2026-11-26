@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from gi.repository import Adw, Gdk, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk, Pango
 
 from ...i18n import _
 from ...models import Episode, StudyNote, TranscriptSegment
@@ -17,18 +17,20 @@ def _escape(text: str) -> str:
 
 
 def _render_word_markup(segment: TranscriptSegment, position: float) -> str:
-    """Highlight the currently spoken word inside the active cue when word timestamps exist."""
+    """Smooth progressive word reveal without font-weight/underline line reflow."""
     if not segment.words:
         return _escape(segment.text)
+    dark = Adw.StyleManager.get_default().get_dark()
+    accent = "#c88cff" if dark else "#7224d8"
     parts: list[str] = []
     for word in segment.words:
         escaped = _escape(word.word)
-        if word.start - 0.08 <= position <= word.end + 0.08:
-            parts.append(f"<b><u>{escaped}</u></b>")
-        elif position > word.end + 0.08:
+        if word.start - 0.06 <= position <= word.end + 0.06:
+            parts.append(f"<span foreground='{accent}'>{escaped}</span>")
+        elif position > word.end + 0.06:
             parts.append(escaped)
         else:
-            parts.append(f"<span alpha='72%'>{escaped}</span>")
+            parts.append(f"<span alpha='48%'>{escaped}</span>")
     return " ".join(parts)
 
 
@@ -41,6 +43,7 @@ class _CueRow(Gtk.Box):
                          css_classes=["transcript-cue"])
         self.segment = segment
         self._active = False
+        self._past = False
         self._last_word_key = ""
 
         top = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
@@ -85,7 +88,13 @@ class _CueRow(Gtk.Box):
         self.translation_label.set_text(self.segment.translation)
         self.translation_label.set_visible(enabled and bool(self.segment.translation))
 
-    def set_active(self, active: bool, position: float) -> None:
+    def set_state(self, *, active: bool, past: bool, position: float) -> None:
+        if past != self._past:
+            self._past = past
+            if past:
+                self.add_css_class("past")
+            else:
+                self.remove_css_class("past")
         if active != self._active:
             self._active = active
             if active:
@@ -125,8 +134,8 @@ class TranscriptPanel(Gtk.Box):
         self._bilingual = bool(self.ai.bilingual_default) if self.ai else False
         self._loop_segment: TranscriptSegment | None = None
         self._auto_follow = True
-        self._programmatic_scroll = False
-        self._last_manual_scroll = 0.0
+        self._scroll_anim: Adw.TimedAnimation | None = None
+        self._last_scroll_target: float | None = None
         self._search_query = ""
         self._view_mode = "transcript"  # "transcript" or "notebook"
 
@@ -194,7 +203,8 @@ class TranscriptPanel(Gtk.Box):
 
         # -- Body stack (transcript vs study notebook)
         self.body_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE,
-                                    vexpand=True, hexpand=True)
+                                    vexpand=True, hexpand=True,
+                                    hhomogeneous=True, vhomogeneous=True)
 
         # Transcript list inside an overlay (so we can show "Jump back to live audio" pill)
         overlay = Gtk.Overlay(vexpand=True, hexpand=True)
@@ -202,9 +212,12 @@ class TranscriptPanel(Gtk.Box):
                                 css_classes=["transcript-list"])
         self.scroller = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER,
                                            vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+                                           propagate_natural_width=False,
+                                           propagate_natural_height=False,
                                            child=self.cues_box, vexpand=True)
-        vadj = self.scroller.get_vadjustment()
-        vadj.connect("value-changed", self._on_scroll_changed)
+        scroll_ctrl = Gtk.EventControllerScroll.new(Gtk.EventControllerScrollFlags.VERTICAL)
+        scroll_ctrl.connect("scroll", self._on_user_scrolled)
+        self.scroller.add_controller(scroll_ctrl)
         overlay.set_child(self.scroller)
 
         self.follow_btn = Gtk.Button(label=_("Acompanhar áudio"),
@@ -220,6 +233,8 @@ class TranscriptPanel(Gtk.Box):
                                     css_classes=["transcript-list"])
         notebook_scroll = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER,
                                              vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+                                             propagate_natural_width=False,
+                                             propagate_natural_height=False,
                                              child=self.notebook_box, vexpand=True)
         self.body_stack.add_named(notebook_scroll, "notebook")
         self.append(self.body_stack)
@@ -261,6 +276,8 @@ class TranscriptPanel(Gtk.Box):
         if self._bilingual and self._segments:
             self._maybe_request_translations()
         self._sync_controls()
+        if self._auto_follow:
+            GLib.timeout_add(120, self._scroll_active_deferred)
 
     def update_position(self, position: float) -> None:
         if self._episode is None or not self._segments:
@@ -274,17 +291,19 @@ class TranscriptPanel(Gtk.Box):
 
         idx = self._find_segment_index(position)
         if idx != self._active_index:
-            if 0 <= self._active_index < len(self._rows):
-                self._rows[self._active_index].set_active(False, position)
             self._active_index = idx
+            for i, row in enumerate(self._rows):
+                row.set_state(active=(i == idx), past=(idx >= 0 and i < idx), position=position)
             if 0 <= idx < len(self._rows):
-                self._rows[idx].set_active(True, position)
                 if self._auto_follow:
-                    self._scroll_to_row(self._rows[idx])
+                    self._scroll_to_row(self._rows[idx], position=position, force=True)
                 if self._bilingual:
                     self._maybe_request_translations(position)
         elif 0 <= idx < len(self._rows):
-            self._rows[idx].set_active(True, position)
+            row = self._rows[idx]
+            row.set_state(active=True, past=False, position=position)
+            if self._auto_follow:
+                self._scroll_to_row(row, position=position, force=False)
 
     # -- rendering -------------------------------------------------------------------
 
@@ -305,23 +324,52 @@ class TranscriptPanel(Gtk.Box):
         return found
 
     def _reload_segments(self) -> None:
-        clear(self.cues_box)
-        self._rows = []
-        self._active_index = -1
-
         if self._episode is None or self.transcription is None:
+            clear(self.cues_box)
+            self._rows = []
+            self._segments = []
+            self._active_index = -1
             return
 
         all_segments = self.transcription.segments_for(self._episode.id)
         query = self._search_query.strip().lower()
         if query:
-            self._segments = [
+            filtered = [
                 s for s in all_segments
                 if query in s.text.lower() or query in s.translation.lower()
                 or query in s.speaker.lower()
             ]
         else:
-            self._segments = all_segments
+            filtered = all_segments
+
+        # Incremental append when new chunks arrive at the end (no flicker, no scroll reset!)
+        if (self._rows and len(filtered) >= len(self._segments)
+                and all(abs(a.start - b.start) < 1e-3 and a.text == b.text
+                        for a, b in zip(self._segments, filtered))):
+            for seg, row in zip(filtered, self._rows):
+                if seg.translation != row.segment.translation:
+                    row.segment.translation = seg.translation
+                    row.set_bilingual(self._bilingual)
+            new_items = filtered[len(self._segments):]
+            if new_items:
+                self._segments = filtered
+                for seg in new_items:
+                    row = _CueRow(
+                        seg,
+                        bilingual=self._bilingual,
+                        on_seek=self._on_seek_segment,
+                        on_study=self._on_study_segment,
+                        on_repeat=self._on_repeat_segment,
+                    )
+                    self._rows.append(row)
+                    self.cues_box.append(row)
+                self.update_position(self.playback.position)
+            return
+
+        clear(self.cues_box)
+        self._rows = []
+        self._active_index = -1
+        self._segments = filtered
 
         if not self._segments:
             self._build_empty_state(bool(query))
@@ -403,17 +451,25 @@ class TranscriptPanel(Gtk.Box):
 
         if source == "rss":
             self.source_pill.set_text(_("RSS Grátis"))
+            self.source_pill.set_tooltip_text(_("Transcrição oficial incluída no feed RSS"))
             self.source_pill.set_visible(True)
             self.live_btn.set_visible(False)
         elif live_on or state == "transcribing":
             self.source_pill.set_text(_("Transcrevendo…") if state == "transcribing" else _("Ao vivo"))
+            self.source_pill.set_tooltip_text(_("Transcrição progressiva ativa via OpenRouter"))
             self.source_pill.set_visible(True)
             self.live_btn.set_visible(True)
             self.live_btn.set_label(_("Pausar IA"))
             self.live_btn.remove_css_class("suggested-action")
         elif self.ai is not None and self.ai.configured:
-            self.source_pill.set_text(_("OpenRouter") if source == "openrouter" else "")
-            self.source_pill.set_visible(source == "openrouter")
+            if source == "openrouter":
+                self.source_pill.set_text(_("IA pausada"))
+                self.source_pill.set_tooltip_text(
+                    _("Nenhuma nova chamada à API está sendo feita. O texto já em cache "
+                      "continua sincronizado até o fim do trecho transcrito."))
+                self.source_pill.set_visible(True)
+            else:
+                self.source_pill.set_visible(False)
             self.live_btn.set_visible(True)
             self.live_btn.set_label(_("Continuar ao vivo") if source == "openrouter"
                                     else _("Transcrever ao vivo"))
@@ -431,8 +487,44 @@ class TranscriptPanel(Gtk.Box):
 
     # -- scrolling & follow ----------------------------------------------------------
 
-    def _scroll_to_row(self, row: Gtk.Widget) -> None:
+    def _scroll_active_deferred(self) -> bool:
+        if self._auto_follow and 0 <= self._active_index < len(self._rows):
+            pos = self.playback.position if self.playback else 0.0
+            self._scroll_to_row(self._rows[self._active_index], position=pos, force=True)
+        return GLib.SOURCE_REMOVE
+
+    def _intra_row_y_offset(self, row: _CueRow, position: float) -> float:
+        """Estimate vertical pixel offset of the currently spoken word inside a tall cue."""
+        seg = row.segment
+        if seg.words:
+            # Find active word byte offset in the plain label text for exact Pango layout Y.
+            byte_offset = 0
+            found = False
+            for idx, word in enumerate(seg.words):
+                if position <= word.end + 0.08:
+                    found = True
+                    break
+                byte_offset += len(word.word.encode("utf-8")) + 1
+            if not found:
+                byte_offset = max(0, len(" ".join(w.word for w in seg.words).encode("utf-8")) - 1)
+            layout = row.text_label.get_layout()
+            if layout is not None:
+                text_len = len(layout.get_text().encode("utf-8"))
+                pos_rect = layout.index_to_pos(min(byte_offset, max(0, text_len - 1)))
+                word_y = max(0.0, pos_rect.y / Pango.SCALE)
+                ok_lbl, lbl_rect = row.text_label.compute_bounds(row)
+                top_pad = lbl_rect.get_y() if ok_lbl else 24.0
+                return top_pad + word_y
+        # Proportional fallback when there are no word timestamps
+        span = max(0.5, seg.end - seg.start)
+        frac = max(0.0, min(1.0, (position - seg.start) / span))
+        ok_row, row_rect = row.compute_bounds(self.cues_box)
+        return (row_rect.get_height() * frac) if ok_row else 0.0
+
+    def _scroll_to_row(self, row: _CueRow, *, position: float = 0.0, force: bool = True) -> None:
         if not row.get_mapped() or not self.cues_box.get_mapped():
+            if force:
+                GLib.timeout_add(100, self._scroll_active_deferred)
             return
         ok, rect = row.compute_bounds(self.cues_box)
         if not ok:
@@ -440,33 +532,55 @@ class TranscriptPanel(Gtk.Box):
         vadj = self.scroller.get_vadjustment()
         page = vadj.get_page_size()
         if page <= 0:
+            if force:
+                GLib.timeout_add(100, self._scroll_active_deferred)
             return
-        target = max(0.0, rect.get_y() - page * 0.28)
+
+        # If the cue is taller than half the viewport, track the active line inside the cue!
+        if rect.get_height() > page * 0.55:
+            intra_y = self._intra_row_y_offset(row, position)
+            focus_y = rect.get_y() + intra_y
+            target = max(0.0, focus_y - page * 0.34)
+        else:
+            if not force:
+                return
+            target = max(0.0, rect.get_y() - page * 0.28)
+
         target = min(target, max(0.0, vadj.get_upper() - page))
-        self._programmatic_scroll = True
-        vadj.set_value(target)
-        GLib.idle_add(self._clear_programmatic_scroll)
-
-    def _clear_programmatic_scroll(self) -> bool:
-        self._programmatic_scroll = False
-        return GLib.SOURCE_REMOVE
-
-    def _on_scroll_changed(self, _vadj: Gtk.Adjustment) -> None:
-        if self._programmatic_scroll or not self._segments:
+        current = vadj.get_value()
+        min_delta = 2.0 if force else 26.0
+        if abs(target - current) < min_delta:
             return
-        now = time.monotonic()
-        if now - self._last_manual_scroll < 0.15:
+        if not force and self._last_scroll_target is not None and abs(target - self._last_scroll_target) < 22.0:
             return
-        self._last_manual_scroll = now
+        self._last_scroll_target = target
+        if self._scroll_anim is not None:
+            self._scroll_anim.pause()
+            self._scroll_anim = None
+        anim_target = Adw.PropertyAnimationTarget.new(vadj, "value")
+        anim = Adw.TimedAnimation.new(self.scroller, current, target, 320, anim_target)
+        anim.set_easing(Adw.Easing.EASE_OUT_CUBIC)
+        self._scroll_anim = anim
+        anim.play()
+
+    def _on_user_scrolled(self, _ctrl, _dx: float, _dy: float) -> bool:
+        if not self._segments:
+            return False
+        if self._scroll_anim is not None:
+            self._scroll_anim.pause()
+            self._scroll_anim = None
         if self._auto_follow:
             self._auto_follow = False
             self.follow_btn.set_visible(True)
+        return False
 
     def _on_resume_follow(self, _button) -> None:
         self._auto_follow = True
+        self._last_scroll_target = None
         self.follow_btn.set_visible(False)
         if 0 <= self._active_index < len(self._rows):
-            self._scroll_to_row(self._rows[self._active_index])
+            pos = self.playback.position if self.playback else 0.0
+            self._scroll_to_row(self._rows[self._active_index], position=pos, force=True)
 
     # -- user actions ----------------------------------------------------------------
 

@@ -251,11 +251,14 @@ class NowPlayingView(Gtk.Widget):
                                       hexpand=True, child=player_box)
         self.body_row.append(self.player_clamp)
 
-        # -- Side panel (Episode Notes / Up Next Queue)
+        # -- Side panel (Episode Notes / Transcript / Up Next Queue)
         self.panel_card = self._build_panel_card()
+        self.panel_clamp = Adw.Clamp(maximum_size=460, tightening_threshold=460,
+                                     hexpand=False, child=self.panel_card)
         self.side_revealer = Gtk.Revealer(
             transition_type=Gtk.RevealerTransitionType.SLIDE_LEFT,
-            child=self.panel_card, reveal_child=False)
+            child=self.panel_clamp, reveal_child=False,
+            hexpand=False, valign=Gtk.Align.CENTER)
         self.body_row.append(self.side_revealer)
 
         scroller = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER,
@@ -285,10 +288,11 @@ class NowPlayingView(Gtk.Widget):
     def _build_panel_card(self) -> Gtk.Widget:
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10,
                        css_classes=["now-playing-panel"])
-        card.set_size_request(340, 380)
+        card.set_size_request(460, 540)
 
         self.panel_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE,
-                                     vexpand=True, hexpand=True)
+                                     vexpand=True, hexpand=True,
+                                     hhomogeneous=True, vhomogeneous=True)
 
         # Notes page
         notes_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, vexpand=True)
@@ -308,6 +312,8 @@ class NowPlayingView(Gtk.Widget):
         notes_body.append(self.notes_title)
         notes_body.append(self.notes_text)
         notes_scroll = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER,
+                                          propagate_natural_width=False,
+                                          propagate_natural_height=False,
                                           child=notes_body, vexpand=True)
         notes_page.append(notes_scroll)
         self.panel_stack.add_named(notes_page, "notes")
@@ -325,6 +331,8 @@ class NowPlayingView(Gtk.Widget):
 
         self.queue_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         queue_scroll = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER,
+                                          propagate_natural_width=False,
+                                          propagate_natural_height=False,
                                           child=self.queue_box, vexpand=True)
         queue_page.append(queue_scroll)
         self.panel_stack.add_named(queue_page, "queue")
@@ -345,19 +353,21 @@ class NowPlayingView(Gtk.Widget):
         if compact:
             self.add_css_class("compact")
             self.footer.set_spacing(4)
-            if self.side_revealer.get_child() is self.panel_card:
-                self.side_revealer.set_child(None)
+            if self.panel_clamp.get_child() is self.panel_card:
+                self.panel_clamp.set_child(None)
             if self.compact_panel_revealer.get_child() is not self.panel_card:
                 self.compact_panel_revealer.set_child(self.panel_card)
-            self.panel_card.set_size_request(-1, 260)
+            self.panel_card.set_size_request(-1, 320)
+            self.panel_card.set_hexpand(True)
         else:
             self.remove_css_class("compact")
             self.footer.set_spacing(8)
             if self.compact_panel_revealer.get_child() is self.panel_card:
                 self.compact_panel_revealer.set_child(None)
-            if self.side_revealer.get_child() is not self.panel_card:
-                self.side_revealer.set_child(self.panel_card)
-            self.panel_card.set_size_request(360, 420)
+            if self.panel_clamp.get_child() is not self.panel_card:
+                self.panel_clamp.set_child(self.panel_card)
+            self.panel_card.set_hexpand(False)
+            self.panel_card.set_size_request(460, 540)
         self._sync_panel_layout()
 
     def _on_panel_toggled(self, mode: str, active: bool) -> None:

@@ -109,6 +109,17 @@
   </screenshots>
 
   <releases>
+    <release version="0.7.1" date="2026-11-26">
+      <description>
+        <p>UX polish for Preferences and synchronized live transcripts.</p>
+        <ul>
+          <li>Roomier Preferences dialog (760×680) with clean model and language selectors and dynamic subtitles</li>
+          <li>Fixed, comfortable transcript panel size (460×540) with smooth animated scrolling, incremental updates and no-reflow word highlighting</li>
+          <li>Automatic sentence-level splitting of long STT chunks plus line-by-line intra-block scrolling for tall cues</li>
+          <li>Smarter look-ahead prefetching and clear "AI paused" indicator</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.7.0" date="2026-11-26">
       <description>
         <p>Live transcripts, optional OpenRouter BYOK integration, and Language Study Mode.</p>

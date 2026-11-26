@@ -217,6 +217,27 @@ class TranscriptParserTests(unittest.TestCase):
         self.assertEqual([w.word for w in wsegs[0].words], ["Good", "morning."])
         self.assertAlmostEqual(wsegs[0].words[1].end, 42.0)
 
+        # Long single 40s STT segment with word timestamps splits into sentence-sized study cues.
+        long_text = (
+            "There is one particular food scientist associated with this turkey dinner. "
+            "She was a snappy dresser so I can tell you that. "
+            "From her obituary there is very little in there and she had no children."
+        )
+        raw_words = long_text.split()
+        words = [
+            {"word": w, "start": i * 0.7, "end": (i + 1) * 0.7}
+            for i, w in enumerate(raw_words)
+        ]
+        long_payload = {
+            "segments": [{"start": 0.0, "end": len(raw_words) * 0.7, "text": long_text,
+                          "words": words}],
+        }
+        split_segs = parse_json_transcript(long_payload, offset=100.0, source="openrouter")
+        self.assertGreaterEqual(len(split_segs), 3)
+        self.assertTrue(split_segs[0].text.endswith("dinner."))
+        self.assertAlmostEqual(split_segs[0].start, 100.0)
+        self.assertGreater(split_segs[1].start, split_segs[0].start)
+
     def test_rss_prefers_timed_podcast_transcript(self):
         xml = b"""<?xml version="1.0" encoding="UTF-8"?>
         <rss version="2.0" xmlns:podcast="https://podcastindex.org/namespace/1.0">
