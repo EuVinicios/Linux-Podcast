@@ -742,6 +742,10 @@ scale.now-playing-volume:focus-visible > trough > slider {
   background-color: color-mix(in srgb, currentColor 8%, transparent);
 }
 
+.now-playing-sheet.compact .np-pill {
+  padding: 4px 10px;
+}
+
 .np-pill:hover {
   background-color: color-mix(in srgb, currentColor 14%, transparent);
 }
@@ -862,4 +866,124 @@ scale.now-playing-volume:focus-visible > trough > slider {
   padding: 18px;
   margin-bottom: 6px;
   box-shadow: 0 4px 14px color-mix(in srgb, var(--accent-bg-color) 35%, transparent);
+}
+
+/* ---------- Transcript & Study Mode ---------- */
+
+.transcript-status-pill {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.72em;
+  color: var(--accent-color);
+  background-color: color-mix(in srgb, var(--accent-bg-color) 16%, transparent);
+}
+
+.transcript-toolbar {
+  padding: 2px 0 4px 0;
+}
+
+.transcript-action-pill {
+  min-height: 30px;
+  padding: 2px 12px;
+  font-size: 0.84em;
+  font-weight: 700;
+}
+
+.transcript-action-pill:checked {
+  color: var(--accent-fg-color);
+  background-color: var(--accent-bg-color);
+}
+
+.transcript-icon-btn {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+}
+
+.transcript-icon-btn:checked {
+  color: var(--accent-fg-color);
+  background-color: var(--accent-bg-color);
+}
+
+.transcript-list {
+  padding: 2px 4px 28px 2px;
+}
+
+.transcript-cue {
+  padding: 9px 11px;
+  border-radius: 12px;
+  background-color: transparent;
+  transition: background-color 180ms ease;
+}
+
+.transcript-cue:hover {
+  background-color: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.transcript-cue.active {
+  background-color: color-mix(in srgb, var(--accent-bg-color) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent-bg-color);
+}
+
+.transcript-cue-btn {
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+  opacity: 0.45;
+  transition: opacity 150ms ease;
+}
+
+.transcript-cue:hover .transcript-cue-btn,
+.transcript-cue.active .transcript-cue-btn {
+  opacity: 1;
+}
+
+.transcript-time {
+  font-size: 0.76em;
+}
+
+.transcript-text {
+  font-size: 0.98em;
+  line-height: 1.46;
+}
+
+.transcript-cue.active .transcript-text {
+  font-weight: 600;
+}
+
+.transcript-translation {
+  font-size: 0.90em;
+  line-height: 1.40;
+  margin-top: 2px;
+}
+
+.transcript-follow-btn {
+  margin-bottom: 10px;
+  box-shadow: 0 4px 14px alpha(black, 0.25);
+}
+
+.transcript-empty {
+  padding: 24px 12px;
+}
+
+.study-popover-body {
+  padding: 10px 12px;
+}
+
+.study-translation {
+  color: var(--accent-color);
+  font-weight: 600;
+  line-height: 1.42;
+}
+
+.study-explanation {
+  font-size: 0.92em;
+  line-height: 1.45;
+}
+
+.study-note-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background-color: color-mix(in srgb, currentColor 6%, transparent);
 }

@@ -19,6 +19,7 @@ from .marquee import MarqueeLabel
 from .player_bar import _skip_icon
 from .queue_drawer import QueueRow
 from .sleep_timer import SleepTimerButton
+from .transcript_panel import TranscriptPanel
 
 
 def _rgba(rgb: colors.RGB, alpha: float) -> Gdk.RGBA:
@@ -203,9 +204,9 @@ class NowPlayingView(Gtk.Widget):
             volume_row.append(widget)
         player_box.append(volume_row)
 
-        # Bottom utility buttons: Speed, Sleep timer, Episode Notes, Up Next Queue
-        footer = Gtk.Box(spacing=10, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-                         css_classes=["now-playing-footer"])
+        # Bottom utility buttons: Speed, Sleep timer, Transcript, Episode Notes, Up Next Queue
+        self.footer = Gtk.Box(spacing=8, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+                              css_classes=["now-playing-footer"])
         self.speed_label = Gtk.Label(label=format_speed(self.playback.rate))
         self.speed_button = Gtk.MenuButton(child=self.speed_label,
                                            css_classes=["flat", "pill", "np-pill", "speed"],
@@ -223,6 +224,13 @@ class NowPlayingView(Gtk.Widget):
         self._notes_handler = self.notes_button.connect(
             "toggled", lambda btn: self._on_panel_toggled("notes", btn.get_active()))
 
+        self.transcript_button = Gtk.ToggleButton(icon_name="accessories-dictionary-symbolic",
+                                                  css_classes=["flat", "pill", "np-pill"],
+                                                  tooltip_text=_("Transcrição e Estudo"),
+                                                  valign=Gtk.Align.CENTER)
+        self._transcript_handler = self.transcript_button.connect(
+            "toggled", lambda btn: self._on_panel_toggled("transcript", btn.get_active()))
+
         self.queue_button = Gtk.ToggleButton(css_classes=["flat", "pill", "np-pill"],
                                              tooltip_text=_("A Seguir"),
                                              valign=Gtk.Align.CENTER)
@@ -234,9 +242,10 @@ class NowPlayingView(Gtk.Widget):
         self._queue_handler = self.queue_button.connect(
             "toggled", lambda btn: self._on_panel_toggled("queue", btn.get_active()))
 
-        for widget in (self.speed_button, self.sleep_button, self.notes_button, self.queue_button):
-            footer.append(widget)
-        player_box.append(footer)
+        for widget in (self.speed_button, self.sleep_button, self.transcript_button,
+                       self.notes_button, self.queue_button):
+            self.footer.append(widget)
+        player_box.append(self.footer)
 
         self.player_clamp = Adw.Clamp(maximum_size=420, tightening_threshold=340,
                                       hexpand=True, child=player_box)
@@ -320,6 +329,10 @@ class NowPlayingView(Gtk.Widget):
         queue_page.append(queue_scroll)
         self.panel_stack.add_named(queue_page, "queue")
 
+        # Transcript & Study page
+        self.transcript_panel = TranscriptPanel()
+        self.panel_stack.add_named(self.transcript_panel, "transcript")
+
         card.append(self.panel_stack)
         return card
 
@@ -331,6 +344,7 @@ class NowPlayingView(Gtk.Widget):
         self._compact = compact
         if compact:
             self.add_css_class("compact")
+            self.footer.set_spacing(4)
             if self.side_revealer.get_child() is self.panel_card:
                 self.side_revealer.set_child(None)
             if self.compact_panel_revealer.get_child() is not self.panel_card:
@@ -338,6 +352,7 @@ class NowPlayingView(Gtk.Widget):
             self.panel_card.set_size_request(-1, 260)
         else:
             self.remove_css_class("compact")
+            self.footer.set_spacing(8)
             if self.compact_panel_revealer.get_child() is self.panel_card:
                 self.compact_panel_revealer.set_child(None)
             if self.side_revealer.get_child() is not self.panel_card:
@@ -351,12 +366,15 @@ class NowPlayingView(Gtk.Widget):
     def _set_panel(self, mode: str | None) -> None:
         self._panel_mode = mode
         for btn, handler, target in ((self.notes_button, self._notes_handler, "notes"),
+                                     (self.transcript_button, self._transcript_handler, "transcript"),
                                      (self.queue_button, self._queue_handler, "queue")):
             btn.handler_block(handler)
             btn.set_active(mode == target)
             btn.handler_unblock(handler)
         if mode is not None:
             self.panel_stack.set_visible_child_name(mode)
+            if mode == "transcript":
+                self.transcript_panel.on_panel_opened()
         self._sync_panel_layout()
 
     def _sync_panel_layout(self) -> None:
@@ -405,6 +423,7 @@ class NowPlayingView(Gtk.Widget):
                                       episode.podcast_accent)
         self._update_saved_button(episode)
         self._update_notes(episode)
+        self.transcript_panel.set_episode(episode)
         self._update_times(self.playback.position, self.playback.duration)
         self._sync_state()
         self._rebuild_queue()
@@ -508,6 +527,7 @@ class NowPlayingView(Gtk.Widget):
     def _on_position(self, _pb, position: float, duration: float) -> None:
         if not self._user_seeking:
             self._update_times(position, duration)
+        self.transcript_panel.update_position(position)
 
     def _update_times(self, position: float, duration: float) -> None:
         upper = max(duration, position, 1.0)

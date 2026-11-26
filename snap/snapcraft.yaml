@@ -34,6 +34,7 @@ apps:
     slots: [mpris]
     plugs:
       - network
+      - network-bind
       - network-status
       - audio-playback
       # Keeps the sync password in the GNOME keyring. Until the store grants

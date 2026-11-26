@@ -31,6 +31,8 @@
       <li xml:lang="pt-BR">Fila A Seguir, Continuar Ouvindo e progresso de cada episódio</li>
       <li>Optional sync of shows and progress with gpodder.net or Nextcloud</li>
       <li xml:lang="pt-BR">Sincronização opcional de programas e progresso com gpodder.net ou Nextcloud</li>
+      <li>Synced transcripts from RSS feeds and optional live AI transcription &amp; language study via OpenRouter (BYOK)</li>
+      <li xml:lang="pt-BR">Transcrições sincronizadas de feeds RSS e transcrição ao vivo com modo estudo de idiomas via OpenRouter (opcional)</li>
       <li>Playback speed from 0.5× to 2.5× without changing the pitch</li>
       <li xml:lang="pt-BR">Velocidade de 0,5× a 2,5× sem alterar o tom da voz</li>
       <li>Sleep timer, offline downloads and listening history</li>
@@ -107,6 +109,17 @@
   </screenshots>
 
   <releases>
+    <release version="0.7.0" date="2026-11-26">
+      <description>
+        <p>Live transcripts, optional OpenRouter BYOK integration, and Language Study Mode.</p>
+        <ul>
+          <li>Free native support for Podcasting 2.0 RSS transcripts (WebVTT, SRT and JSON) with local SQLite caching</li>
+          <li>Optional Preferences → AI &amp; Transcription tab with OpenRouter OAuth PKCE or manual API key stored securely in the system keyring</li>
+          <li>Progressive look-ahead live audio transcription via GStreamer and OpenRouter with synchronized word and cue highlighting</li>
+          <li>Language Study Mode inside Now Playing: click-to-seek, sentence repeat/loop, 0.5× speed, bilingual translations, AI phrase breakdown and saved study notebook</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.6.4" date="2026-11-07">
       <description>
         <p>Bug fix release for session restoration, new episode listings, and Continue Listening shelf.</p>
