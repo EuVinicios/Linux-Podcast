@@ -11,6 +11,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gst, Gtk
 from . import config
 from .api.apple_service import AppleService
 from .api.itunes_service import ItunesService
+from .core.ai import AIManager
 from .core.database import Database
 from .core.downloader import DownloadManager
 from .core.library import Library
@@ -18,6 +19,7 @@ from .core.mpris import MprisService
 from .core.playback import PlaybackManager
 from .core.player import AudioPlayer
 from .core.sync import SyncManager
+from .core.transcription import TranscriptionManager
 from .i18n import _
 from .ui.helpers import follow_style_preferences
 from .ui.preferences import PreferencesDialog, apply_accent, apply_color_scheme
@@ -47,6 +49,8 @@ class PodFlowApplication(Adw.Application):
         self.downloads: DownloadManager | None = None
         self.mpris: MprisService | None = None
         self.sync: SyncManager | None = None
+        self.ai: AIManager | None = None
+        self.transcription: TranscriptionManager | None = None
 
     # -- lifecycle -------------------------------------------------------------------
 
@@ -72,6 +76,8 @@ class PodFlowApplication(Adw.Application):
         self.playback = PlaybackManager(self.db, AudioPlayer(), app=self)
         self.downloads = DownloadManager(self.db)
         self.sync = SyncManager(self.db, self.library, self.playback)
+        self.ai = AIManager(self.db)
+        self.transcription = TranscriptionManager(self.db, self.ai, self.playback)
         self.mpris = MprisService(self.playback, self.db, self.images, app=self)
         self.mpris.start()
         apply_color_scheme(self.db.get_setting("color_scheme", "system"))
@@ -114,6 +120,8 @@ class PodFlowApplication(Adw.Application):
                 self.window._on_close_request()
             if self.sync is not None:
                 self.sync.stop()
+            if self.transcription is not None:
+                self.transcription.shutdown()
             if self.mpris is not None:
                 self.mpris.stop()
             if self.playback is not None:
@@ -149,6 +157,7 @@ class PodFlowApplication(Adw.Application):
             "quit": self.quit,
             "about": self._show_about,
             "preferences": lambda: PreferencesDialog().present(self.get_active_window()),
+            "ai-preferences": lambda: PreferencesDialog("ai").present(self.get_active_window()),
             "account": lambda: PreferencesDialog("sync").present(self.get_active_window()),
             "sync": lambda: self.sync.sync_now(manual=True),
             "shortcuts": self._show_shortcuts,
@@ -307,11 +316,11 @@ class PodFlowApplication(Adw.Application):
             support_url=f"{config.WEBSITE}#perguntas",
             release_notes_version=config.VERSION,
             release_notes=_(
-                "<p>Tela de execução no estilo do Apple Podcasts.</p><ul>"
-                "<li>Clique na barra de reprodução para abrir a tela Em Reprodução com capa "
-                "grande, fundo colorido da capa, controles completos e volume</li>"
-                "<li>Notas do episódio e fila A Seguir integradas na tela de execução</li>"
-                "<li>Animação da capa conforme o estado de reprodução</li></ul>"),
+                "<p>Transcrição ao vivo, OpenRouter BYOK e Modo Estudo de Idiomas.</p><ul>"
+                "<li>Suporte nativo e gratuito a transcrições de feeds RSS (Podcasting 2.0: VTT, SRT e JSON)</li>"
+                "<li>Nova aba Preferências → IA e Transcrição (100% opcional) com conexão via OpenRouter OAuth PKCE ou chave própria no chaveiro do sistema</li>"
+                "<li>Transcrição progressiva ao vivo sob demanda com acompanhamento sincronizado palavra a palavra e clique para pular no áudio</li>"
+                "<li>Modo Estudo: tradução bilíngue, explicação contextual de expressões com IA, repetição/loop de frases, velocidade 0,5× e caderno de estudos</li></ul>"),
         )
         about.add_link(_("Código-fonte"), config.REPOSITORY)
         about.add_link(_("Política de privacidade"), f"{config.WEBSITE}privacidade.html")

@@ -23,7 +23,7 @@ SKIP_FORWARD = 30
 SAVE_INTERVAL = 5.0
 PLAYED_TAIL = 45  # seconds left at which an episode counts as played
 FADE_SECONDS = 10.0
-RATES = (0.75, 1.0, 1.25, 1.5, 1.75, 2.0)
+RATES = (0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0)
 
 
 class PlaybackManager(GObject.Object):

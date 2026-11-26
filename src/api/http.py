@@ -22,10 +22,12 @@ MAX_BYTES = 64 * 1024 * 1024
 
 
 class NetworkError(Exception):
-    def __init__(self, message: str, *, status: int | None = None, url: str = ""):
+    def __init__(self, message: str, *, status: int | None = None, url: str = "",
+                 body: bytes = b""):
         super().__init__(message)
         self.status = status
         self.url = url
+        self.body = body
 
 
 class OfflineError(NetworkError):
@@ -122,7 +124,13 @@ def request(method: str, url: str, *, body: Any = None, form: dict[str, str] | N
             return response.status, _decode_body(payload,
                                                  response.headers.get("Content-Encoding") or "")
     except urllib.error.HTTPError as error:
-        raise NetworkError(f"HTTP {error.code}", status=error.code, url=url) from error
+        err_body = b""
+        try:
+            err_body = error.read(64 * 1024)
+        except Exception:
+            pass
+        raise NetworkError(f"HTTP {error.code}", status=error.code, url=url,
+                           body=err_body) from error
     except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError, OSError,
             zlib.error, EOFError) as error:
         raise NetworkError(str(getattr(error, "reason", error)) or type(error).__name__,
@@ -139,6 +147,12 @@ def open_stream(url: str, *, timeout: float = 30, headers: dict[str, str] | None
     try:
         return urllib.request.urlopen(_request(url, request_headers), timeout=timeout)
     except urllib.error.HTTPError as error:
-        raise NetworkError(f"HTTP {error.code}", status=error.code, url=url) from error
+        err_body = b""
+        try:
+            err_body = error.read(64 * 1024)
+        except Exception:
+            pass
+        raise NetworkError(f"HTTP {error.code}", status=error.code, url=url,
+                           body=err_body) from error
     except (urllib.error.URLError, socket.timeout, TimeoutError, OSError) as error:
         raise NetworkError(str(getattr(error, "reason", error)), url=url) from error

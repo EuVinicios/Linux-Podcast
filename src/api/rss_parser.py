@@ -132,6 +132,43 @@ def parse_date(value: str | None) -> int:
         return 0
 
 
+_TRANSCRIPT_PRIORITY = {
+    "text/vtt": 0,
+    "application/x-subrip": 1,
+    "application/srt": 1,
+    "text/srt": 1,
+    "application/json": 2,
+    "text/plain": 3,
+}
+
+
+def _best_transcript(item: ET.Element) -> tuple[str, str]:
+    """Pick the best `<podcast:transcript>` entry (preferring timed VTT/SRT/JSON)."""
+    candidates: list[tuple[int, int, str, str]] = []
+    for index, elem in enumerate(item.findall("podcast:transcript", NS)):
+        url = (elem.get("url") or "").strip()
+        if not url:
+            continue
+        mime = (elem.get("type") or "").strip().lower().split(";")[0]
+        rel = (elem.get("rel") or "").strip().lower()
+        priority = _TRANSCRIPT_PRIORITY.get(mime, 4)
+        if priority == 4:
+            lower = url.lower().split("?")[0]
+            if lower.endswith(".vtt"):
+                priority, mime = 0, mime or "text/vtt"
+            elif lower.endswith(".srt"):
+                priority, mime = 1, mime or "application/x-subrip"
+            elif lower.endswith(".json"):
+                priority, mime = 2, mime or "application/json"
+        # Prefer captions (timed) over untimed transcript when mime ties
+        rel_rank = 0 if rel == "captions" else 1
+        candidates.append((priority, rel_rank, index, url, mime))
+    if not candidates:
+        return "", ""
+    candidates.sort(key=lambda c: (c[0], c[1], c[2]))
+    return candidates[0][3], candidates[0][4]
+
+
 def _parse_item(item: ET.Element, podcast_id: str, channel_image: str) -> Episode | None:
     audio_url = _attr(item, "enclosure", "url")
     mime = _attr(item, "enclosure", "type")
@@ -150,6 +187,7 @@ def _parse_item(item: ET.Element, podcast_id: str, channel_image: str) -> Episod
     published = parse_date(_text(item, "pubDate") or _text(item, "dc:date")
                            or _text(item, "atom:published"))
     image = _attr(item, "itunes:image", "href") or _attr(item, "media:thumbnail", "url")
+    transcript_url, transcript_type = _best_transcript(item)
 
     return Episode(
         id=make_episode_id(podcast_id, guid, audio_url, title),
@@ -166,6 +204,8 @@ def _parse_item(item: ET.Element, podcast_id: str, channel_image: str) -> Episod
         artwork_url=image if image and image != channel_image else "",
         link=_text(item, "link"),
         chapters_url=_attr(item, "podcast:chapters", "url"),
+        transcript_url=transcript_url,
+        transcript_type=transcript_type,
         season=_int(_text(item, "itunes:season")),
         number=_int(_text(item, "itunes:episode")),
         explicit=_explicit(_text(item, "itunes:explicit")),

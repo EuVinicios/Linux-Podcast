@@ -65,6 +65,8 @@ class Episode:
     artwork_url: str = ""
     link: str = ""
     chapters_url: str = ""
+    transcript_url: str = ""
+    transcript_type: str = ""
     season: int | None = None
     number: int | None = None
     explicit: bool = False
@@ -109,3 +111,34 @@ class Episode:
 class SearchResults:
     podcasts: list[Podcast] = field(default_factory=list)
     episodes: list[Episode] = field(default_factory=list)
+
+
+@dataclass
+class TranscriptWord:
+    word: str
+    start: float
+    end: float
+
+
+@dataclass
+class TranscriptSegment:
+    start: float
+    end: float
+    text: str
+    speaker: str = ""
+    translation: str = ""
+    words: list[TranscriptWord] = field(default_factory=list)
+    source: str = ""
+
+
+@dataclass
+class StudyNote:
+    id: str
+    episode_id: str
+    text: str
+    start: float = 0.0
+    end: float = 0.0
+    translation: str = ""
+    explanation: str = ""
+    saved: bool = False
+    created_at: int = 0

@@ -6,6 +6,7 @@ from gi.repository import Adw, Gdk, Gio, Gtk
 
 from ..i18n import _
 from ..utils.time_format import format_size
+from .ai_page import AIPage
 from .helpers import follow_style_preferences, get_app
 from .sync_page import SyncPage
 
@@ -104,6 +105,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
                                                    "da Apple para o Brasil. Os episódios são "
                                                    "reproduzidos direto dos feeds dos produtores."))
         page.add(about)
+        self.add(AIPage(self))
         self.add(SyncPage(self))
         if page_name:
             self.set_visible_page_name(page_name)

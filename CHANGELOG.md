@@ -4,6 +4,24 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.7.0] - 2026-11-26
+
+### Adicionado
+
+- **Transcrições nativas gratuitas (`Podcasting 2.0`)**:
+  - Leitura automática da tag `<podcast:transcript>` em feeds RSS (priorizando legendas cronometradas WebVTT, SRT e JSON) com cache permanente no banco SQLite local — funciona gratuitamente sem precisar de chave de IA.
+- **Integração opcional com OpenRouter (BYOK — cada usuário com sua própria chave)**:
+  - Nova aba **Preferências → IA e Transcrição**, totalmente opcional e sem impacto para quem não configurar chave.
+  - Conexão em 1 clique pelo navegador via **OAuth PKCE** ou colagem manual da chave de API (`sk-or-v1-…`), armazenada com segurança no chaveiro do GNOME (`libsecret`) com fallback em arquivo privado (`0600`).
+  - Seleção de modelos de transcrição (`MAI-Transcribe 2`, `Deepgram Nova 3`, `Whisper Large v3 Turbo`, `Whisper 1`, `Scribe v2` ou modelo personalizado) e modelos de estudo/tradução, idioma do áudio/tradução, verificação de saldo/limite da chave e medidor de consumo estimado.
+- **Transcrição progressiva ao vivo via GStreamer + OpenRouter**:
+  - Extração nativa de blocos de áudio WAV 16 kHz mono pelo próprio GStreamer (sem novas dependências externas), transcrevendo janelas curtas à frente da reprodução e salvando em cache para nunca cobrar duas vezes pelo mesmo trecho.
+- **Painel de Transcrição sincronizado e Modo Estudo de Idiomas na tela Em Reprodução**:
+  - Destaque sincronizado em tempo real da frase ativa e da palavra falada, com rolagem automática inteligente e clique em qualquer frase para pular direto para aquele segundo.
+  - Botões **Repetir frase**, **Loop de frase** para treino intensivo de escuta/pronúncia e velocidade **`0,5×`** no menu de reprodução.
+  - **Modo Bilíngue** com tradução em lotes exibida abaixo de cada frase (com cache local).
+  - **Estudar expressão com IA**: popover contextual com tradução, vocabulário/expressões idiomáticas e dica de gramática, além de **Caderno de estudos** integrado e busca instantânea na transcrição.
+
 ## [0.6.4] - 2026-11-07
 
 ### Corrigido

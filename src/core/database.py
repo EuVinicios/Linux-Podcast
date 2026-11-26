@@ -19,11 +19,11 @@ from typing import Any
 from gi.repository import GObject
 
 from .. import config
-from ..models import Episode, Podcast, itunes_podcast_id
+from ..models import Episode, Podcast, StudyNote, TranscriptSegment, TranscriptWord, itunes_podcast_id
 from ..utils import tasks
 from . import seed_data
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS podcasts (
@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS episodes (
     artwork_url     TEXT NOT NULL DEFAULT '',
     link            TEXT NOT NULL DEFAULT '',
     chapters_url    TEXT NOT NULL DEFAULT '',
+    transcript_url  TEXT NOT NULL DEFAULT '',
+    transcript_type TEXT NOT NULL DEFAULT '',
     season          INTEGER,
     number          INTEGER,
     explicit        INTEGER NOT NULL DEFAULT 0,
@@ -108,6 +110,45 @@ CREATE TABLE IF NOT EXISTS sync_actions (
     total      INTEGER NOT NULL DEFAULT -1,
     created_at INTEGER NOT NULL
 );
+
+-- Cached transcript segments (from RSS <podcast:transcript> or progressive AI STT).
+CREATE TABLE IF NOT EXISTS transcript_segments (
+    episode_id  TEXT NOT NULL REFERENCES episodes(id) ON DELETE CASCADE,
+    start_time  REAL NOT NULL,
+    end_time    REAL NOT NULL,
+    text        TEXT NOT NULL,
+    speaker     TEXT NOT NULL DEFAULT '',
+    translation TEXT NOT NULL DEFAULT '',
+    words_json  TEXT NOT NULL DEFAULT '',
+    source      TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (episode_id, start_time)
+);
+CREATE INDEX IF NOT EXISTS idx_transcript_episode ON transcript_segments(episode_id, start_time);
+
+-- Tracks which progressive audio chunks were already transcribed for an episode.
+CREATE TABLE IF NOT EXISTS transcript_chunks (
+    episode_id  TEXT NOT NULL REFERENCES episodes(id) ON DELETE CASCADE,
+    chunk_index INTEGER NOT NULL,
+    start_time  REAL NOT NULL,
+    end_time    REAL NOT NULL,
+    source      TEXT NOT NULL DEFAULT '',
+    created_at  INTEGER NOT NULL,
+    PRIMARY KEY (episode_id, chunk_index)
+);
+
+-- Cached AI study breakdowns and user-saved study notes.
+CREATE TABLE IF NOT EXISTS study_notes (
+    id          TEXT PRIMARY KEY,
+    episode_id  TEXT NOT NULL REFERENCES episodes(id) ON DELETE CASCADE,
+    start_time  REAL NOT NULL DEFAULT 0,
+    end_time    REAL NOT NULL DEFAULT 0,
+    text        TEXT NOT NULL,
+    translation TEXT NOT NULL DEFAULT '',
+    explanation TEXT NOT NULL DEFAULT '',
+    saved       INTEGER NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_study_notes_episode ON study_notes(episode_id, created_at DESC);
 """
 
 _EPISODE_SELECT = """
@@ -177,6 +218,8 @@ def _episode(row: sqlite3.Row) -> Episode:
         artwork_url=row["artwork_url"],
         link=row["link"],
         chapters_url=row["chapters_url"],
+        transcript_url=row["transcript_url"] if "transcript_url" in keys else "",
+        transcript_type=row["transcript_type"] if "transcript_type" in keys else "",
         season=row["season"],
         number=row["number"],
         explicit=bool(row["explicit"]),
@@ -209,6 +252,8 @@ class Database(GObject.Object):
         "history-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "downloads-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "sync-actions-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "transcript-changed": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        "study-notes-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, path: str | Path | None = None, seed: bool = True):
@@ -269,6 +314,13 @@ class Database(GObject.Object):
         if version < SCHEMA_VERSION:
             # Every statement is idempotent, so this both creates and upgrades.
             self._conn.executescript(SCHEMA)
+            cols = {row["name"] for row in self._conn.execute("PRAGMA table_info(episodes)")}
+            if "transcript_url" not in cols:
+                self._conn.execute(
+                    "ALTER TABLE episodes ADD COLUMN transcript_url TEXT NOT NULL DEFAULT ''")
+            if "transcript_type" not in cols:
+                self._conn.execute(
+                    "ALTER TABLE episodes ADD COLUMN transcript_type TEXT NOT NULL DEFAULT ''")
             self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
     def _seed(self) -> None:
@@ -418,14 +470,14 @@ class Database(GObject.Object):
         if not episodes:
             return 0
         text_cols = ("guid", "title", "summary", "audio_url", "mime_type", "artwork_url",
-                     "link", "chapters_url")
+                     "link", "chapters_url", "transcript_url", "transcript_type")
         updates = ",\n".join(_KEEP_TEXT.format(col=c, table="episodes") for c in text_cols)
         sql = f"""
             INSERT INTO episodes (id, podcast_id, guid, itunes_track_id, title, summary,
                                   description, audio_url, mime_type, file_size, duration,
-                                  published, artwork_url, link, chapters_url, season, number,
-                                  explicit)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                  published, artwork_url, link, chapters_url, transcript_url,
+                                  transcript_type, season, number, explicit)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 {updates},
                 description = CASE WHEN length(excluded.description) >= length(episodes.description)
@@ -440,7 +492,8 @@ class Database(GObject.Object):
         """
         rows = [(e.id, podcast_id, e.guid, e.itunes_track_id, e.title, e.summary, e.description,
                  e.audio_url, e.mime_type, e.file_size, e.duration, e.published, e.artwork_url,
-                 e.link, e.chapters_url, e.season, e.number, int(e.explicit)) for e in episodes]
+                 e.link, e.chapters_url, e.transcript_url, e.transcript_type, e.season, e.number,
+                 int(e.explicit)) for e in episodes]
         with self._tx() as conn:
             before = conn.execute("SELECT COUNT(*) FROM episodes WHERE podcast_id = ?",
                                   (podcast_id,)).fetchone()[0]
@@ -782,3 +835,202 @@ class Database(GObject.Object):
                    "last_played_at = ? WHERE id = ?", (max(0.0, position), at, episode_id))
         self._emit("episode-changed", episode_id)
         self._emit("history-changed")
+
+    # -- transcripts & study notes ---------------------------------------------------
+
+    @staticmethod
+    def _decode_words(raw: str) -> list[TranscriptWord]:
+        if not raw:
+            return []
+        try:
+            items = json.loads(raw)
+        except ValueError:
+            return []
+        words: list[TranscriptWord] = []
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, (list, tuple)) and len(item) >= 3:
+                    words.append(TranscriptWord(str(item[0]), float(item[1]), float(item[2])))
+        return words
+
+    @staticmethod
+    def _encode_words(words: list[TranscriptWord]) -> str:
+        if not words:
+            return ""
+        return json.dumps([[w.word, round(w.start, 3), round(w.end, 3)] for w in words],
+                          ensure_ascii=False, separators=(",", ":"))
+
+    def list_transcript_segments(self, episode_id: str) -> list[TranscriptSegment]:
+        rows = self._query(
+            "SELECT start_time, end_time, text, speaker, translation, words_json, source "
+            "FROM transcript_segments WHERE episode_id = ? ORDER BY start_time",
+            (episode_id,),
+        )
+        return [
+            TranscriptSegment(
+                start=float(r["start_time"]),
+                end=float(r["end_time"]),
+                text=r["text"],
+                speaker=r["speaker"],
+                translation=r["translation"],
+                words=self._decode_words(r["words_json"]),
+                source=r["source"],
+            )
+            for r in rows
+        ]
+
+    def has_transcript(self, episode_id: str) -> bool:
+        row = self._one("SELECT 1 FROM transcript_segments WHERE episode_id = ? LIMIT 1",
+                        (episode_id,))
+        return row is not None
+
+    def transcript_source(self, episode_id: str) -> str:
+        row = self._one("SELECT source FROM transcript_segments WHERE episode_id = ? LIMIT 1",
+                        (episode_id,))
+        return row["source"] if row else ""
+
+    def save_transcript_segments(self, episode_id: str, segments: list[TranscriptSegment],
+                                 *, replace: bool = False) -> None:
+        if not segments and not replace:
+            return
+        rows = [
+            (episode_id, round(s.start, 3), round(s.end, 3), s.text, s.speaker,
+             s.translation, self._encode_words(s.words), s.source)
+            for s in segments
+        ]
+        with self._tx() as conn:
+            if replace:
+                conn.execute("DELETE FROM transcript_segments WHERE episode_id = ?", (episode_id,))
+                conn.execute("DELETE FROM transcript_chunks WHERE episode_id = ?", (episode_id,))
+            if rows:
+                conn.executemany(
+                    """INSERT INTO transcript_segments
+                           (episode_id, start_time, end_time, text, speaker, translation,
+                            words_json, source)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                       ON CONFLICT(episode_id, start_time) DO UPDATE SET
+                           end_time = excluded.end_time,
+                           text = excluded.text,
+                           speaker = CASE WHEN excluded.speaker != '' THEN excluded.speaker
+                                          ELSE transcript_segments.speaker END,
+                           translation = CASE WHEN excluded.translation != '' THEN excluded.translation
+                                              ELSE transcript_segments.translation END,
+                           words_json = CASE WHEN excluded.words_json != '' THEN excluded.words_json
+                                             ELSE transcript_segments.words_json END,
+                           source = excluded.source""",
+                    rows,
+                )
+        self._emit("transcript-changed", episode_id)
+
+    def update_segment_translations(self, episode_id: str,
+                                    translations: dict[float, str]) -> None:
+        if not translations:
+            return
+        with self._tx() as conn:
+            conn.executemany(
+                "UPDATE transcript_segments SET translation = ? "
+                "WHERE episode_id = ? AND start_time = ?",
+                [(text, episode_id, round(start, 3)) for start, text in translations.items()],
+            )
+        self._emit("transcript-changed", episode_id)
+
+    def clear_transcript(self, episode_id: str) -> None:
+        with self._tx() as conn:
+            conn.execute("DELETE FROM transcript_segments WHERE episode_id = ?", (episode_id,))
+            conn.execute("DELETE FROM transcript_chunks WHERE episode_id = ?", (episode_id,))
+        self._emit("transcript-changed", episode_id)
+
+    def clear_all_transcripts(self) -> None:
+        with self._tx() as conn:
+            conn.execute("DELETE FROM transcript_segments")
+            conn.execute("DELETE FROM transcript_chunks")
+
+    def count_transcribed_episodes(self) -> int:
+        row = self._one("SELECT COUNT(DISTINCT episode_id) FROM transcript_segments")
+        return int(row[0]) if row else 0
+
+    def list_transcribed_chunks(self, episode_id: str) -> set[int]:
+        rows = self._query("SELECT chunk_index FROM transcript_chunks WHERE episode_id = ?",
+                           (episode_id,))
+        return {int(r["chunk_index"]) for r in rows}
+
+    def mark_chunk_transcribed(self, episode_id: str, chunk_index: int,
+                               start_time: float, end_time: float, source: str) -> None:
+        self._exec(
+            """INSERT INTO transcript_chunks
+                   (episode_id, chunk_index, start_time, end_time, source, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT(episode_id, chunk_index) DO UPDATE SET
+                   start_time = excluded.start_time,
+                   end_time = excluded.end_time,
+                   source = excluded.source,
+                   created_at = excluded.created_at""",
+            (episode_id, int(chunk_index), round(start_time, 3), round(end_time, 3),
+             source, _now()),
+        )
+
+    def get_study_note(self, note_id: str) -> StudyNote | None:
+        row = self._one("SELECT * FROM study_notes WHERE id = ?", (note_id,))
+        if row is None:
+            return None
+        return StudyNote(
+            id=row["id"],
+            episode_id=row["episode_id"],
+            text=row["text"],
+            start=float(row["start_time"]),
+            end=float(row["end_time"]),
+            translation=row["translation"],
+            explanation=row["explanation"],
+            saved=bool(row["saved"]),
+            created_at=int(row["created_at"]),
+        )
+
+    def save_study_note(self, note: StudyNote) -> None:
+        self._exec(
+            """INSERT INTO study_notes
+                   (id, episode_id, start_time, end_time, text, translation, explanation,
+                    saved, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+                   translation = CASE WHEN excluded.translation != '' THEN excluded.translation
+                                      ELSE study_notes.translation END,
+                   explanation = CASE WHEN excluded.explanation != '' THEN excluded.explanation
+                                      ELSE study_notes.explanation END,
+                   saved = excluded.saved""",
+            (note.id, note.episode_id, round(note.start, 3), round(note.end, 3),
+             note.text, note.translation, note.explanation, int(note.saved),
+             note.created_at or _now()),
+        )
+        self._emit("study-notes-changed")
+
+    def list_saved_study_notes(self, episode_id: str | None = None,
+                               limit: int = 100) -> list[StudyNote]:
+        if episode_id:
+            rows = self._query(
+                "SELECT * FROM study_notes WHERE saved = 1 AND episode_id = ? "
+                "ORDER BY start_time, created_at DESC LIMIT ?",
+                (episode_id, limit),
+            )
+        else:
+            rows = self._query(
+                "SELECT * FROM study_notes WHERE saved = 1 ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            )
+        return [
+            StudyNote(
+                id=r["id"],
+                episode_id=r["episode_id"],
+                text=r["text"],
+                start=float(r["start_time"]),
+                end=float(r["end_time"]),
+                translation=r["translation"],
+                explanation=r["explanation"],
+                saved=True,
+                created_at=int(r["created_at"]),
+            )
+            for r in rows
+        ]
+
+    def delete_study_note(self, note_id: str) -> None:
+        self._exec("UPDATE study_notes SET saved = 0 WHERE id = ?", (note_id,))
+        self._emit("study-notes-changed")
