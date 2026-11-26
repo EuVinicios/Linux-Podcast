@@ -32,42 +32,42 @@ DEFAULT_STT_MODEL = "microsoft/mai-transcribe-2"
 DEFAULT_STUDY_MODEL = "google/gemini-2.5-flash-lite"
 
 STT_MODELS: tuple[tuple[str, str, str], ...] = (
-    ("microsoft/mai-transcribe-2", "MAI-Transcribe 2 (Microsoft)",
-     "Rápido, timestamps por palavra e ótimo custo-benefício"),
-    ("deepgram/nova-3", "Nova 3 (Deepgram)",
+    ("microsoft/mai-transcribe-2", "MAI-Transcribe 2",
+     "Microsoft · rápido, timestamps por palavra e ótimo custo-benefício"),
+    ("deepgram/nova-3", "Deepgram Nova 3",
      "Alta precisão em inglês · ~US$ 0,26/h"),
-    ("openai/whisper-large-v3-turbo", "Whisper Large v3 Turbo (OpenAI)",
-     "Multilíngue rápido · ~US$ 0,36/h"),
-    ("openai/whisper-1", "Whisper 1 (OpenAI)",
-     "Clássico e estável · ~US$ 0,36/h"),
-    ("elevenlabs/scribe-v2", "Scribe v2 (ElevenLabs)",
+    ("openai/whisper-large-v3-turbo", "Whisper Large v3 Turbo",
+     "OpenAI · multilíngue rápido · ~US$ 0,36/h"),
+    ("openai/whisper-1", "Whisper 1",
+     "OpenAI · clássico e estável · ~US$ 0,36/h"),
+    ("elevenlabs/scribe-v2", "ElevenLabs Scribe v2",
      "Excelente em múltiplos sotaques"),
 )
 
 STUDY_MODELS: tuple[tuple[str, str, str], ...] = (
     ("google/gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite",
-     "Ultrarrápido e muito econômico para tradução e estudo"),
+     "Google · ultrarrápido e muito econômico para tradução e estudo"),
     ("openai/gpt-4o-mini", "GPT-4o Mini",
-     "Ótimo equilíbrio entre clareza e custo"),
+     "OpenAI · ótimo equilíbrio entre clareza e custo"),
     ("anthropic/claude-haiku-4.5", "Claude Haiku 4.5",
-     "Explicações naturais e detalhadas de expressões"),
+     "Anthropic · explicações naturais e detalhadas de expressões"),
     ("google/gemini-2.5-flash", "Gemini 2.5 Flash",
-     "Alta qualidade para contexto e gramática"),
+     "Google · alta qualidade para contexto e gramática"),
 )
 
 SOURCE_LANGUAGES: tuple[tuple[str, str], ...] = (
-    ("auto", "Detectar automaticamente"),
-    ("en", "Inglês (en)"),
-    ("pt", "Português (pt)"),
-    ("es", "Espanhol (es)"),
-    ("fr", "Francês (fr)"),
-    ("de", "Alemão (de)"),
-    ("it", "Italiano (it)"),
-    ("ja", "Japonês (ja)"),
+    ("auto", "Automático"),
+    ("en", "Inglês"),
+    ("pt", "Português"),
+    ("es", "Espanhol"),
+    ("fr", "Francês"),
+    ("de", "Alemão"),
+    ("it", "Italiano"),
+    ("ja", "Japonês"),
 )
 
 TARGET_LANGUAGES: tuple[tuple[str, str], ...] = (
-    ("pt-BR", "Português (Brasil)"),
+    ("pt-BR", "Português (BR)"),
     ("en", "English"),
     ("es", "Español"),
     ("fr", "Français"),

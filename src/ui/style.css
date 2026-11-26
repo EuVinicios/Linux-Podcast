@@ -907,14 +907,22 @@ scale.now-playing-volume:focus-visible > trough > slider {
 }
 
 .transcript-list {
-  padding: 2px 4px 28px 2px;
+  padding: 4px 8px 56px 4px;
 }
 
 .transcript-cue {
-  padding: 9px 11px;
-  border-radius: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
   background-color: transparent;
-  transition: background-color 180ms ease;
+  transition: background-color 220ms ease, opacity 220ms ease;
+}
+
+.transcript-cue.past {
+  opacity: 0.58;
+}
+
+.transcript-cue.past:hover {
+  opacity: 0.92;
 }
 
 .transcript-cue:hover {
@@ -922,7 +930,8 @@ scale.now-playing-volume:focus-visible > trough > slider {
 }
 
 .transcript-cue.active {
-  background-color: color-mix(in srgb, var(--accent-bg-color) 16%, transparent);
+  opacity: 1;
+  background-color: color-mix(in srgb, var(--accent-bg-color) 18%, transparent);
   box-shadow: inset 3px 0 0 var(--accent-bg-color);
 }
 
@@ -930,7 +939,7 @@ scale.now-playing-volume:focus-visible > trough > slider {
   min-width: 26px;
   min-height: 26px;
   padding: 0;
-  opacity: 0.45;
+  opacity: 0.40;
   transition: opacity 150ms ease;
 }
 
@@ -944,8 +953,8 @@ scale.now-playing-volume:focus-visible > trough > slider {
 }
 
 .transcript-text {
-  font-size: 0.98em;
-  line-height: 1.46;
+  font-size: 1.03em;
+  line-height: 1.50;
 }
 
 .transcript-cue.active .transcript-text {

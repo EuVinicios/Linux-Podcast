@@ -212,9 +212,13 @@ class TranscriptionManager(GObject.Object):
             duration = max(duration, float(self.playback.duration or 0.0))
 
         chunk_idx = max(0, int(position // CHUNK_SECONDS))
+        pos_in_chunk = position - chunk_idx * CHUNK_SECONDS
         done_chunks = self.db.list_transcribed_chunks(episode.id)
         wanted: list[int] = []
-        for idx in range(chunk_idx, chunk_idx + LOOKAHEAD_CHUNKS + 1):
+        # Always ensure current chunk; prefetch next chunk only after 45% through current one
+        # so pausing AI quickly never bills an unnecessary future slice.
+        lookahead = LOOKAHEAD_CHUNKS if pos_in_chunk >= CHUNK_SECONDS * 0.45 else 0
+        for idx in range(chunk_idx, chunk_idx + lookahead + 1):
             start_t = idx * CHUNK_SECONDS
             if duration > 0 and start_t >= duration - 0.5:
                 break

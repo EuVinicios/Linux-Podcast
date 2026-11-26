@@ -4,6 +4,21 @@ Todas as mudanças relevantes do PodFlow são registradas aqui.
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto usa
 [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.7.1] - 2026-11-26
+
+### Melhorado
+
+- **Layout das Preferências (IA e Transcrição)**:
+  - Diálogo de Preferências mais espaçoso (`760×680`, com redução adaptativa em telas estreitas).
+  - Nomes curtos e limpos nos seletores de modelo e idioma, movendo as descrições para subtítulos dinâmicos abaixo de cada opção (sem cortes com reticências).
+  - Link para chaves/créditos agrupado junto à conta OpenRouter e ícone padrão `dialog-password-symbolic`.
+- **Painel de Transcrição sincronizada e fluidez de leitura**:
+  - Largura e altura fixas confortáveis no desktop (`460×540`) com `Adw.Clamp` e `propagate_natural_width=False`, evitando qualquer variação de tamanho durante a transcrição.
+  - Rolagem animada suave (`Adw.TimedAnimation`, 320 ms) e polling de posição mais responsivo (`100 ms`).
+  - Atualização incremental dos novos blocos sem reconstruir a lista nem resetar a rolagem, destaque progressivo palavra a palavra sem quebra de linha e frases passadas suavemente esmaecidas.
+  - Quebra automática de segmentos STT longos em frases naturais usando os *timestamps* por palavra, além de acompanhamento intra-bloco linha a linha via `Pango.Layout` para blocos altos.
+  - *Look-ahead* inteligente (só pré-busca o próximo bloco após 45% do atual) e selo claro **“IA pausada”** quando a transcrição progressiva é pausada.
+
 ## [0.7.0] - 2026-11-26
 
 ### Adicionado

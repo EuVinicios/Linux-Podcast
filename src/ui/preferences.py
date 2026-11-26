@@ -59,7 +59,8 @@ class PreferencesDialog(Adw.PreferencesDialog):
     __gtype_name__ = "PodFlowPreferencesDialog"
 
     def __init__(self, page_name: str | None = None):
-        super().__init__(title=_("Preferências"), search_enabled=False)
+        super().__init__(title=_("Preferências"), search_enabled=False,
+                         content_width=760, content_height=680)
         app = get_app()
         page = Adw.PreferencesPage(title=_("Geral"), name="general",
                                    icon_name="preferences-system-symbolic")

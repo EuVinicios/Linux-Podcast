@@ -172,14 +172,21 @@ def parse_json_transcript(payload: Any, *, offset: float = 0.0,
         elif top_words:
             seg_words = [w for w in top_words if start - 0.15 <= w.start <= end + 0.15]
 
-        segments.append(TranscriptSegment(
-            start=round(start, 3),
-            end=round(end, 3),
-            text=cleaned,
-            speaker=speaker,
-            words=seg_words,
-            source=source,
-        ))
+        if seg_words and (len(seg_words) > 20 or (end - start) > 12.0 or len(cleaned) > 160):
+            segments.extend(_group_words_into_segments(seg_words, speaker=speaker, source=source))
+        elif not seg_words and ((end - start) > 14.0 or len(cleaned) > 220):
+            segments.extend(split_plain_text(cleaned, start_offset=start,
+                                             duration=max(end - start, 1.0),
+                                             speaker=speaker, source=source))
+        else:
+            segments.append(TranscriptSegment(
+                start=round(start, 3),
+                end=round(end, 3),
+                text=cleaned,
+                speaker=speaker,
+                words=seg_words,
+                source=source,
+            ))
 
     # Fallback when payload only contains top-level `text` (non-verbose STT response)
     if not segments and isinstance(payload, dict):
@@ -199,6 +206,7 @@ def parse_json_transcript(payload: Any, *, offset: float = 0.0,
 
 
 def _group_words_into_segments(words: list[TranscriptWord], *,
+                               speaker: str = "",
                                source: str = "openrouter") -> list[TranscriptSegment]:
     """Group word-level timestamps into natural readable sentences/phrases."""
     segments: list[TranscriptSegment] = []
@@ -206,12 +214,17 @@ def _group_words_into_segments(words: list[TranscriptWord], *,
     for word in words:
         bucket.append(word)
         elapsed = bucket[-1].end - bucket[0].start
-        ends_sentence = word.word.endswith((".", "!", "?"))
-        if (ends_sentence and len(bucket) >= 4) or len(bucket) >= 18 or elapsed >= 8.0:
+        ends_sentence = word.word.rstrip('"\'”’)]').endswith((".", "!", "?"))
+        ends_clause = word.word.rstrip('"\'”’)]').endswith((",", ";", ":", "—"))
+        if ((ends_sentence and len(bucket) >= 5)
+                or (ends_clause and (len(bucket) >= 14 or elapsed >= 6.5))
+                or len(bucket) >= 22
+                or elapsed >= 9.0):
             segments.append(TranscriptSegment(
                 start=bucket[0].start,
                 end=max(bucket[-1].end, bucket[0].start + 0.2),
                 text=" ".join(w.word for w in bucket),
+                speaker=speaker,
                 words=list(bucket),
                 source=source,
             ))
@@ -221,6 +234,7 @@ def _group_words_into_segments(words: list[TranscriptWord], *,
             start=bucket[0].start,
             end=max(bucket[-1].end, bucket[0].start + 0.2),
             text=" ".join(w.word for w in bucket),
+            speaker=speaker,
             words=list(bucket),
             source=source,
         ))
@@ -228,7 +242,7 @@ def _group_words_into_segments(words: list[TranscriptWord], *,
 
 
 def split_plain_text(text: str, *, start_offset: float = 0.0, duration: float = 30.0,
-                     source: str = "rss") -> list[TranscriptSegment]:
+                     speaker: str = "", source: str = "rss") -> list[TranscriptSegment]:
     """Split untimed text into proportional sentences so it remains navigable."""
     text = text.lstrip("\ufeff").strip()
     if not text:
@@ -250,6 +264,7 @@ def split_plain_text(text: str, *, start_offset: float = 0.0, duration: float = 
             start=round(cursor, 3),
             end=round(end, 3),
             text=part,
+            speaker=speaker,
             source=source,
         ))
         cursor = end
